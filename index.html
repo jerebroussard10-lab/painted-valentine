@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Painted Valentine</title>
+  <style>
+    :root{
+      --cream1:#fbf6ea;
+      --cream2:#f4ecd9;
+      --ink: rgba(20,18,18,0.86);
+      --ink2: rgba(20,18,18,0.58);
+      --glass: rgba(255,255,255,0.14);
+      --glass2: rgba(255,255,255,0.09);
+      --stroke: rgba(0,0,0,0.10);
+
+      /* Softer, lighter pink */
+      --pink:#ff8bcf;
+      --pink2:#ffb5df;
+
+      --radius: 18px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; }
+    body{
+      overflow:hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--ink);
+      background: var(--cream1);
+    }
+
+    /* ===== Background stack ===== */
+    .bg{
+      position:fixed;
+      inset:0;
+      z-index:-3;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(255,215,164,0.12), transparent 60%),
+        radial-gradient(1200px 900px at 85% 40%, rgba(255,124,198,0.10), transparent 60%),
+        radial-gradient(900px 700px at 50% 90%, rgba(86,156,255,0.10), transparent 60%),
+        linear-gradient(180deg, var(--cream1), var(--cream2));
+    }
+
+    /* Painting layer */
+    .painting{
+      position:fixed;
+      inset:-8%;
+      z-index:-2;
+      background-image: url("impressionist-art.jpg");
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.02) contrast(1.03);
+      transform: scale(1.06);
+      will-change: transform;
+      animation: slowDrift 34s ease-in-out infinite alternate;
+    }
+    @keyframes slowDrift{
+      0%   { transform: scale(1.06) translate3d(-0.6%, -0.3%, 0); }
+      100% { transform: scale(1.06) translate3d(0.6%, 0.3%, 0); }
+    }
+
+    /* Subtle canvas texture */
+    .canvasTexture{
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 2px, transparent 5px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 2px, transparent 6px);
+      mix-blend-mode: soft-light;
+      opacity: 0.18;
+      pointer-events:none;
+    }
+
+    /* Clouds layer (loop w/ reverse: no hard jump) */
+    .clouds{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+      opacity:0.55;
+      filter: blur(0.6px);
+    }
+    .cloudBand{
+      position:absolute;
+      left:-25%;
+      top:0;
+      width:150%;
+      height:60%;
+      background:
+        radial-gradient(220px 120px at 18% 26%, rgba(255,255,255,0.30), transparent 70%),
+        radial-gradient(260px 140px at 34% 18%, rgba(255,255,255,0.26), transparent 72%),
+        radial-gradient(220px 120px at 52% 24%, rgba(255,255,255,0.22), transparent 70%),
+        radial-gradient(280px 150px at 70% 20%, rgba(255,255,255,0.25), transparent 72%),
+        radial-gradient(250px 140px at 86% 28%, rgba(255,255,255,0.18), transparent 72%);
+      mix-blend-mode: screen;
+      animation: cloudFloat 22s ease-in-out infinite alternate;
+      transform: translate3d(-1.2%,0,0);
+    }
+    .cloudBand.b2{
+      top:6%;
+      opacity:0.7;
+      filter: blur(1.2px);
+      animation-duration: 30s;
+      animation-delay: -7s;
+    }
+    @keyframes cloudFloat{
+      0%   { transform: translate3d(-1.5%, -0.2%, 0) scale(1.02); }
+      100% { transform: translate3d(1.5%,  0.2%, 0) scale(1.02); }
+    }
+
+    /* ===== UI containers ===== */
+    .card{
+      position:fixed;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--glass), var(--glass2));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow:
+        0 26px 70px rgba(0,0,0,0.18),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* ===== Music player (Spotify-ish, vertical-ish) ===== */
+    .recordCard{
+      left: 22px;
+      bottom: 22px;
+      width: 330px;
+      height: 170px;
+      padding: 14px;
+      z-index: 4;
+    }
+
+    .player{ width:100%; display:flex; flex-direction:column; gap:10px; }
+    .playerTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+
+    .cover{
+      flex: 1;
+      height: 58px;
+      border-radius: 16px;
+      background: rgba(20,18,18,0.58);
+      border: 1px solid rgba(255,255,255,0.16);
+      display:flex; align-items:center; justify-content:center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .coverText{
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      color: var(--pink);
+      text-shadow: 0 2px 18px rgba(255,124,198,0.24);
+      user-select:none;
+    }
+
+    .iconSmall{
+      appearance:none;
+      width: 44px; height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.10);
+      color: rgba(20,18,18,0.70);
+      font-size: 20px;
+      cursor:pointer;
+    }
+    .iconSmall:hover{ background: rgba(255,255,255,0.16); transform: translateY(-1px); }
+
+    .timeline{
+      display:grid;
+      grid-template-columns: 44px 1fr 44px;
+      align-items:center;
+      gap: 10px;
+    }
+    .time{
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      opacity: 0.72;
+      user-select:none;
+      text-align:center;
+    }
+
+    .seek{
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(
+        to right,
+        rgba(20,18,18,0.78) 0%,
+        rgba(20,18,18,0.78) var(--fill, 0%),
+        rgba(20,18,18,0.20) var(--fill, 0%),
+        rgba(20,18,18,0.20) 100%
+      );
+      outline:none;
+      cursor:pointer;
+    }
+    .seek::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width: 14px; height: 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      border: 2px solid rgba(0,0,0,0.22);
+    }
+    .seek::-moz-range-thumb{
+      width: 14px; height: 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      border: 2px solid rgba(0,0,0,0.22);
+    }
+
+    .controls{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 12px;
+    }
+    .iconBtn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.10);
+      color: rgba(20,18,18,0.78);
+      border-radius: 999px;
+      width: 42px; height: 42px;
+      display:grid; place-items:center;
+      font-weight: 900;
+      cursor:pointer;
+    }
+    .iconBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.16); }
+    .playBtn{
+      appearance:none;
+      width: 54px; height: 54px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.16);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.14);
+      font-size: 18px;
+      cursor:pointer;
+    }
+    .playBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.20); }
+
+    /* ===== Phone (NO card wrapper) ===== */
+    .phoneCard{
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      z-index: 5;
+    }
+
+    /* Pearlescent white phone body */
+    .phone{
+      width: 140px;
+      height: 220px;
+      border-radius: 28px;
+
+      /* pearlescent */
+      background:
+        radial-gradient(120px 160px at 30% 25%, rgba(255,139,207,0.18), transparent 60%),
+        radial-gradient(140px 180px at 70% 80%, rgba(130,186,255,0.18), transparent 60%),
+        radial-gradient(170px 220px at 50% 50%, rgba(255,255,255,0.85), rgba(245,245,245,0.92) 60%, rgba(255,255,255,0.88)),
+        linear-gradient(145deg, rgba(255,255,255,0.98), rgba(240,240,240,0.96));
+
+      border: 1px solid rgba(0,0,0,0.10);
+      box-shadow:
+        0 22px 60px rgba(0,0,0,0.22),
+        0 2px 0 rgba(255,255,255,0.85) inset,
+        0 -10px 30px rgba(255,255,255,0.25) inset;
+
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      cursor: pointer;
+      transform-origin: center;
+      user-select: none;
+    }
+    .phone:hover{ transform: translateY(-2px); }
+
+    .phoneScreen{
+      width: 100%;
+      height: 150px;
+      border-radius: 18px;
+      background:
+        radial-gradient(120px 160px at 30% 25%, rgba(255,124,198,0.22), transparent 60%),
+        radial-gradient(140px 180px at 70% 80%, rgba(104,166,255,0.22), transparent 60%),
+        rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.10);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.12) inset;
+      position: relative;
+      overflow:hidden;
+    }
+
+    /* tiny shimmer on the screen */
+    .phoneScreen:before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+      transform: rotate(18deg);
+      animation: shimmer 4.8s ease-in-out infinite;
+      opacity: 0.5;
+    }
+    @keyframes shimmer{
+      0% { transform: translateX(-20%) rotate(18deg); }
+      50%{ transform: translateX(20%) rotate(18deg); }
+      100%{ transform: translateX(-20%) rotate(18deg); }
+    }
+
+    .phoneHome{
+      width: 46px;
+      height: 6px;
+      border-radius: 999px;
+      margin-top: 12px;
+      background: rgba(0,0,0,0.18);
+    }
+
+    @keyframes vibrate {
+      0% { transform: translate(0,0) rotate(0deg); }
+      15% { transform: translate(-1px, 1px) rotate(-0.4deg); }
+      30% { transform: translate(1px, -1px) rotate(0.4deg); }
+      45% { transform: translate(-2px, 0px) rotate(-0.6deg); }
+      60% { transform: translate(2px, 0px) rotate(0.6deg); }
+      75% { transform: translate(-1px, -1px) rotate(-0.4deg); }
+      100% { transform: translate(0,0) rotate(0deg); }
+    }
+    .phone.isVibrating{ animation: vibrate 0.45s ease-in-out infinite; }
+
+    /* ===== Chat overlay ===== */
+    .chatOverlay{
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 10;
+      background: rgba(0,0,0,0.22);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .chatOverlay.open{ display:block; }
+
+    .chatPanel{
+      position:absolute;
+      right: 18px;
+      bottom: 18px;
+      width: min(420px, calc(100vw - 36px));
+      height: min(560px, calc(100vh - 36px));
+      border-radius: 26px;
+      background: rgba(255,255,255,0.20);
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.26);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .chatHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 14px 10px;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.18);
+    }
+    .chatTitle{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      color: rgba(20,18,18,0.84);
+    }
+    .chatSub{
+      font-size: 12px;
+      opacity: 0.68;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .xBtn{
+      appearance:none;
+      width: 40px; height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.14);
+      cursor:pointer;
+      font-weight: 900;
+      color: rgba(20,18,18,0.74);
+    }
+    .xBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.18); }
+
+    .chatBody{
+      flex:1;
+      padding: 14px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .bubbleRow{
+      display:flex;
+      gap: 8px;
+      align-items:flex-end;
+    }
+    .bubbleRow.me{ justify-content:flex-end; }
+    .bubbleRow.them{ justify-content:flex-start; }
+
+    .bubble{
+      max-width: 78%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.22);
+      color: rgba(20,18,18,0.84);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+      line-height: 1.25;
+      font-weight: 700;
+    }
+    .bubble.me{
+      background: rgba(255,139,207,0.18);
+      border-color: rgba(255,139,207,0.18);
+    }
+    .bubble.them{
+      background: rgba(255,255,255,0.22);
+    }
+
+    .choiceRow{
+      display:flex;
+      gap: 10px;
+      margin-top: 6px;
+      justify-content:flex-end;
+    }
+    .choiceBtn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.16);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 900;
+      cursor:pointer;
+      color: rgba(20,18,18,0.82);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+    }
+    .choiceBtn.yes{
+      background: rgba(255,139,207,0.22);
+      border-color: rgba(255,139,207,0.22);
+    }
+    .choiceBtn:hover{ transform: translateY(-1px); }
+
+    .hint{
+      font-size: 12px;
+      opacity: 0.7;
+      text-align:center;
+      padding: 10px 14px 14px;
+    }
+
+    /* Reduce motion accessibility */
+    @media (prefers-reduced-motion: reduce){
+      .painting, .cloudBand, .phoneScreen:before { animation:none !important; }
+      .phone.isVibrating{ animation:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg"></div>
+  <div class="painting" aria-hidden="true"></div>
+  <div class="clouds" aria-hidden="true">
+    <div class="cloudBand"></div>
+    <div class="cloudBand b2"></div>
+  </div>
+  <div class="canvasTexture" aria-hidden="true"></div>
+
+  <!-- Music player -->
+  <div class="card recordCard">
+    <div class="player">
+      <div class="playerTop">
+        <div class="cover" aria-hidden="true">
+          <div class="coverText">My Everything 💓</div>
+        </div>
+        <button class="iconSmall" id="likeBtn" aria-label="Like">♡</button>
+      </div>
+
+      <div class="timeline">
+        <div class="time" id="curTime">0:00</div>
+        <input id="seek" class="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek" />
+        <div class="time" id="durTime">0:00</div>
+      </div>
+
+      <div class="controls">
+        <button class="iconBtn" id="prevBtn" aria-label="Rewind 10 seconds">⏮</button>
+        <button class="playBtn" id="playBtn" aria-label="Play/Pause">▶︎</button>
+        <button class="iconBtn" id="nextBtn" aria-label="Skip 10 seconds">⏭</button>
+        <button class="iconBtn" id="muteBtn" aria-label="Mute">🔇</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone (no frosted card) -->
+  <div class="phoneCard">
+    <div class="phone isVibrating" id="phoneBtn" role="button" tabindex="0" aria-label="Open message">
+      <div class="phoneScreen"></div>
+      <div class="phoneHome"></div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chatOverlay" id="chatOverlay" aria-hidden="true">
+    <div class="chatPanel" role="dialog" aria-modal="true" aria-label="Message">
+      <div class="chatHeader">
+        <div>
+          <div class="chatTitle">Message <span aria-hidden="true">💗</span></div>
+          <div class="chatSub">a tiny painted universe</div>
+        </div>
+        <button class="xBtn" id="closeChat" aria-label="Close">✕</button>
+      </div>
+
+      <div class="chatBody" id="chatBody"></div>
+
+      <div class="hint">Tip: music is optional — play it if you want.</div>
+    </div>
+  </div>
+
+  <!-- Audio: rename your file to music.mp3 and keep it in the same folder as index.html -->
+  <audio id="audio" preload="auto" src="music.mp3"></audio>
+
+  <script>
+    // ===== Helpers =====
+    const $ = (sel) => document.querySelector(sel);
+
+    // ===== AUDIO (simple + synced timeline) =====
+    const audio = $('#audio');
+    const playBtn = $('#playBtn');
+    const muteBtn = $('#muteBtn');
+    const seek = $('#seek');
+    const curTimeEl = $('#curTime');
+    const durTimeEl = $('#durTime');
+    const likeBtn = $('#likeBtn');
+
+    let isSeeking = false;
+    let liked = false;
+
+    function fmt(t){
+      if (!isFinite(t)) return "0:00";
+      const m = Math.floor(t / 60);
+      const s = Math.floor(t % 60);
+      return `${m}:${String(s).padStart(2,'0')}`;
+    }
+    function setFill(){
+      const p = (Number(seek.value) / Number(seek.max)) * 100;
+      seek.style.setProperty('--fill', `${p}%`);
+    }
+    function syncUI(){
+      curTimeEl.textContent = fmt(audio.currentTime);
+      durTimeEl.textContent = fmt(audio.duration);
+
+      const max = Number(seek.max);
+      const v = audio.duration ? Math.round((audio.currentTime / audio.duration) * max) : 0;
+      seek.value = String(v);
+      setFill();
+    }
+    function setPlayIcon(){
+      playBtn.textContent = audio.paused ? "▶︎" : "⏸";
+    }
+
+    audio.addEventListener('loadedmetadata', () => { syncUI(); setPlayIcon(); });
+    audio.addEventListener('timeupdate', () => { if (!isSeeking) syncUI(); });
+
+    playBtn.addEventListener('click', async () => {
+      try{
+        if (audio.paused) await audio.play();
+        else audio.pause();
+      }catch(e){ console.log(e); }
+      setPlayIcon();
+    });
+
+    muteBtn.addEventListener('click', () => {
+      audio.muted = !audio.muted;
+      muteBtn.textContent = audio.muted ? "🔈" : "🔇";
+    });
+
+    likeBtn.addEventListener('click', () => {
+      liked = !liked;
+      likeBtn.textContent = liked ? "♥" : "♡";
+      likeBtn.style.color = liked ? "var(--pink)" : "rgba(20,18,18,0.70)";
+    });
+
+    seek.addEventListener('pointerdown', () => { isSeeking = true; });
+    seek.addEventListener('pointerup',   () => { isSeeking = false; });
+
+    seek.addEventListener('input', () => {
+      setFill();
+      const max = Number(seek.max);
+      const t = audio.duration ? (Number(seek.value) / max) * audio.duration : 0;
+      curTimeEl.textContent = fmt(t);
+    });
+
+    seek.addEventListener('change', () => {
+      const max = Number(seek.max);
+      const t = audio.duration ? (Number(seek.value) / max) * audio.duration : 0;
+      audio.currentTime = t;
+      syncUI();
+    });
+
+    // Rewind/skip 10s (cute + useful)
+    $('#prevBtn')?.addEventListener('click', () => {
+      audio.currentTime = Math.max(0, audio.currentTime - 10);
+      syncUI();
+    });
+    $('#nextBtn')?.addEventListener('click', () => {
+      audio.currentTime = Math.min(audio.duration || 999999, audio.currentTime + 10);
+      syncUI();
+    });
+
+    audio.addEventListener('play', setPlayIcon);
+    audio.addEventListener('pause', setPlayIcon);
+
+    setFill();
+    setPlayIcon();
+
+    // ===== Chat / Phone =====
+    const phoneBtn = $('#phoneBtn');
+    const overlay = $('#chatOverlay');
+    const chatBody = $('#chatBody');
+    const closeChat = $('#closeChat');
+
+    const heartPool = ["💗","💖","💕","❤️‍🔥","💘","💞","❤️","🩷","❣️"];
+    const pickHeart = () => heartPool[Math.floor(Math.random()*heartPool.length)];
+
+    function appendBubble(who, text){
+      const row = document.createElement('div');
+      row.className = `bubbleRow ${who}`;
+
+      const b = document.createElement('div');
+      b.className = `bubble ${who}`;
+      b.textContent = text;
+
+      row.appendChild(b);
+      chatBody.appendChild(row);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      return row;
+    }
+
+    function appendAsk(){
+      const row = appendBubble('me', `Will you be my Valentine? ${pickHeart()}`);
+
+      const choices = document.createElement('div');
+      choices.className = 'choiceRow';
+
+      const yes = document.createElement('button');
+      yes.className = 'choiceBtn yes';
+      yes.textContent = 'Yes';
+
+      const no = document.createElement('button');
+      no.className = 'choiceBtn';
+      no.textContent = 'No';
+
+      choices.appendChild(yes);
+      choices.appendChild(no);
+      row.appendChild(choices);
+
+      yes.addEventListener('click', () => {
+        appendBubble('them', `Yes ${pickHeart()}`);
+        appendBubble('me', `Achievement Unlocked: Valentine ${pickHeart()}`);
+        appendBubble('me', `You’re my favorite person. For real.`);
+        row.remove();
+      });
+
+      // playful "no" (dodges clicks) — optional, but cute
+      let dodges = 0;
+      const maxDodges = 6;
+      no.addEventListener('pointerenter', () => {
+        if (dodges >= maxDodges) return;
+        dodges++;
+        const dx = (Math.random()*140 - 70);
+        const dy = (Math.random()*60 - 30);
+        no.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
+      no.addEventListener('click', () => {
+        appendBubble('them', `No 😈`);
+        appendBubble('me', `Okay okay 😂 resetting that question…`);
+        setTimeout(() => {
+          row.remove();
+          appendAsk();
+        }, 650);
+      });
+    }
+
+    const convo = [
+      { who: 'me',   text: `Hey you… 💗` },
+      { who: 'me',   text: `I’m sending this from my little painted universe.` },
+      { who: 'me',   text: `Put the music on if you want. No rush.` },
+      { who: 'me',   text: `Okay. Deep breath…` }
+    ];
+
+    function openConversation(){
+      phoneBtn.classList.remove('isVibrating');
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden','false');
+      chatBody.innerHTML = '';
+
+      // drip the convo in
+      let i = 0;
+      const tick = () => {
+        if (i < convo.length){
+          appendBubble(convo[i].who, convo[i].text);
+          i++;
+          setTimeout(tick, 650);
+        }else{
+          setTimeout(() => appendAsk(), 650);
+        }
+      };
+      tick();
+    }
+
+    function closeConversation(){
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden','true');
+      // start vibrating again after a beat (so it keeps calling them back)
+      setTimeout(() => phoneBtn.classList.add('isVibrating'), 500);
+    }
+
+    phoneBtn.addEventListener('click', openConversation);
+    phoneBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') openConversation();
+    });
+
+    closeChat.addEventListener('click', closeConversation);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeConversation();
+    });
+
+    // ===== Quick sanity tip in console (optional) =====
+    // If music doesn't play on GitHub Pages, confirm:
+    // 1) mp3 file name is EXACTLY "music.mp3"
+    // 2) it sits next to index.html
+    // 3) the file path is correct (same folder)
+    console.log("If audio fails: ensure your MP3 is named music.mp3 and is in the same folder as index.html.");
+  </script>
+</body>
+</html>
