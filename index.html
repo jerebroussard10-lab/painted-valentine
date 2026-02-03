@@ -1,979 +1,1006 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Painted Valentine</title>
   <style>
     :root{
-      --cream:#f7f1e6;
-      --ink:#1b1b1b;
-      --glass: rgba(20, 20, 20, 0.28);
-      --glass-2: rgba(20, 20, 20, 0.40);
-      --stroke: rgba(255,255,255,0.18);
-      --pink:#ff7db6;
+      --cream:#f8f1e6;
+      --ink:#141414;
+      --glass: rgba(20,20,20,0.22);
+      --glass2: rgba(20,20,20,0.36);
+      --pink:#ff7eb6; /* lighter pink */
+      --radius: 22px;
+      --shadow: 0 18px 55px rgba(0,0,0,.35);
+      --softShadow: 0 10px 35px rgba(0,0,0,.22);
     }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; }
+    html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
     body{
-      overflow:hidden;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:white;
       background:#000;
+      overflow:hidden;
+      color:#fff;
     }
 
-    /* ---------- Scene layers ---------- */
+    /* Scene */
     .scene{
-      position:fixed;
-      inset:0;
+      position:fixed; inset:0;
+      background: #000;
     }
 
+    /* Painting background */
     .bg{
-      position:absolute;
-      inset:0;
-      background:url("Midnight.png") center/cover no-repeat;
-      transform: scale(1.02);
-      filter: saturate(1.02) contrast(1.05);
+      position:absolute; inset:0;
+      background-image:url("Midnight.png");
+      background-size:cover;
+      background-position:center;
+      transform: scale(1.03);
+      will-change: transform, filter;
+      animation: bgDrift 26s ease-in-out infinite alternate;
+      filter: saturate(1.05) contrast(1.05);
+    }
+    @keyframes bgDrift{
+      0%{ transform: scale(1.03) translate3d(-6px,-4px,0); }
+      100%{ transform: scale(1.06) translate3d(6px,4px,0); }
     }
 
-    /* Tint glass (stronger before entering) */
-    .glassTint{
-      position:absolute;
-      inset:0;
-      background: rgba(10, 15, 25, 0.55);
-      backdrop-filter: blur(10px);
-      transition: opacity 900ms ease, backdrop-filter 900ms ease;
-      opacity: 1;
+    /* “Tinted glass” over painting before YES */
+    .tint{
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(10,10,18,.30), rgba(10,10,18,.38));
+      backdrop-filter: blur(14px) saturate(1.05);
+      -webkit-backdrop-filter: blur(14px) saturate(1.05);
+      transition: opacity 700ms ease;
+      opacity:1;
       pointer-events:none;
     }
-    .entered .glassTint{
-      opacity: 0;
-      backdrop-filter: blur(0px);
-    }
+    .scene.revealed .tint{ opacity:0; }
 
-    /* Soft paint texture overlay (cheap + effective) */
-    .paintTexture{
-      position:absolute;
-      inset:-10%;
-      pointer-events:none;
-      opacity:0.16;
-      mix-blend-mode: overlay;
-      background:
-        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.12), transparent 45%),
-        radial-gradient(circle at 70% 35%, rgba(255,255,255,0.10), transparent 50%),
-        radial-gradient(circle at 45% 80%, rgba(255,255,255,0.08), transparent 55%),
-        repeating-linear-gradient(25deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 2px, transparent 2px, transparent 10px);
-      filter: blur(0.3px);
-      transform: rotate(-2deg);
-      transition: opacity 800ms ease;
-    }
-    .entered .paintTexture{ opacity:0.22; } /* slightly richer once inside */
-
-    /* Stars layer */
+    /* Stars layer (behind clouds) */
     .stars{
-      position:absolute;
-      inset:0;
+      position:absolute; inset:0;
       pointer-events:none;
-      opacity:0;                 /* hidden until enter */
-      transition: opacity 700ms ease;
+      opacity:0;
+      transition: opacity 900ms ease;
+      mix-blend-mode: screen;
     }
-    .entered .stars{ opacity:1; }
+    .scene.revealed .stars{ opacity:1; }
 
-    /* Twinkle dots via pseudo elements container */
-    .stars::before{
-      content:"";
+    /* Star dots */
+    .star{
       position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle, rgba(255,255,255,0.9) 0 1px, transparent 2px) 10% 20%/180px 160px,
-        radial-gradient(circle, rgba(255,255,255,0.8) 0 1px, transparent 2px) 65% 30%/220px 190px,
-        radial-gradient(circle, rgba(255,255,255,0.7) 0 1px, transparent 2px) 30% 65%/200px 180px,
-        radial-gradient(circle, rgba(255,255,255,0.6) 0 1px, transparent 2px) 85% 75%/240px 210px,
-        radial-gradient(circle, rgba(255,255,255,0.65) 0 1px, transparent 2px) 50% 10%/260px 240px;
-      opacity:0.55;
-      filter: blur(0.2px);
-      animation: twinkle 4.6s ease-in-out infinite;
+      width:2px; height:2px;
+      border-radius:999px;
+      background: rgba(255,255,255,.8);
+      box-shadow: 0 0 10px rgba(255,255,255,.35);
+      opacity:.25;
+      animation: twinkle var(--tw, 4s) ease-in-out infinite;
     }
-    .stars::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle, rgba(255,255,255,0.85) 0 1px, transparent 2px) 20% 35%/260px 240px,
-        radial-gradient(circle, rgba(255,255,255,0.75) 0 1px, transparent 2px) 75% 15%/300px 260px,
-        radial-gradient(circle, rgba(255,255,255,0.65) 0 1px, transparent 2px) 55% 70%/280px 240px;
-      opacity:0.45;
-      filter: blur(0.3px);
-      animation: twinkle 6.2s ease-in-out infinite reverse;
-    }
-
     @keyframes twinkle{
-      0%,100%{ opacity:0.35; transform: translateY(0px); }
-      50%{ opacity:0.62; transform: translateY(-2px); }
+      0%,100%{ opacity:.15; transform:scale(1); }
+      50%{ opacity:.85; transform:scale(1.35); }
     }
 
-    /* Clouds layer */
+    /* Clouds (on top of stars) */
     .clouds{
-      position:absolute;
-      inset:0;
+      position:absolute; inset:0;
       pointer-events:none;
-      opacity:0;                 /* hidden until enter */
-      transition: opacity 700ms ease;
+      opacity:0;
+      transition: opacity 900ms ease;
     }
-    .entered .clouds{ opacity:1; }
+    .scene.revealed .clouds{ opacity:1; }
 
     .cloud{
       position:absolute;
-      top:10%;
-      left:-60%;
-      width:min(520px, 70vw);
-      height:auto;
-      opacity:0;
-      filter: blur(0.2px) brightness(0.95);
+      top: var(--top, 16%);
+      left: -45%;
+      width: var(--w, 58vw);
+      height: auto;
+      opacity: var(--op, .55);
+      filter: blur(var(--blur, 0px)) brightness(1.05) contrast(1.02);
+      transform: translate3d(0,0,0);
       will-change: transform, opacity;
-      animation: cloudDrift linear infinite;
+      animation: cloudDrift var(--dur, 110s) linear infinite;
+      animation-delay: var(--delay, 0s);
     }
-
-    /* One-way across + fade in/out so no “jerk” */
+    /* drift fully across */
     @keyframes cloudDrift{
-      0%   { transform: translateX(-10vw); opacity:0; }
-      8%   { opacity:0.45; }
-      85%  { opacity:0.45; }
-      100% { transform: translateX(140vw); opacity:0; }
+      0%{ transform: translate3d(-10vw, 0, 0); opacity:0; }
+      8%{ opacity: var(--op, .55); }
+      92%{ opacity: var(--op, .55); }
+      100%{ transform: translate3d(160vw, 0, 0); opacity:0; }
     }
 
-    /* Fireflies canvas */
-    #fireflies{
-      position:absolute;
-      inset:0;
+    /* Fireflies */
+    .fireflies{
+      position:absolute; inset:0;
       pointer-events:none;
-      opacity:0;                 /* hidden until enter */
-      transition: opacity 700ms ease;
+      opacity:0;
+      transition: opacity 900ms ease;
     }
-    .entered #fireflies{ opacity:1; }
+    .scene.revealed .fireflies{ opacity:1; }
 
-    /* ---------- Intro text line ---------- */
-    .introLine{
+    .fly{
       position:absolute;
-      top:7%;
-      left:0; right:0;
+      width:4px; height:4px;
+      border-radius:999px;
+      background: rgba(255, 214, 102, .95);
+      box-shadow:
+        0 0 14px rgba(255, 214, 102, .65),
+        0 0 32px rgba(255, 214, 102, .28);
+      opacity:.35;
+      animation:
+        floaty var(--fd, 10s) ease-in-out infinite alternate,
+        blink var(--bd, 3.6s) ease-in-out infinite;
+    }
+    @keyframes blink{
+      0%,100%{ opacity:.25; transform: scale(.9); }
+      50%{ opacity:.95; transform: scale(1.35); }
+    }
+    @keyframes floaty{
+      0%{ transform: translate3d(0,0,0); }
+      100%{ transform: translate3d(var(--dx, 18px), var(--dy, -16px), 0); }
+    }
+
+    /* Top fade line text */
+    .tagline{
+      position:absolute;
+      top: 7vh;
+      width:100%;
       text-align:center;
       font-style: italic;
-      font-size: clamp(16px, 2.0vw, 22px);
-      color: rgba(255,255,255,0.9);
-      text-shadow: 0 8px 24px rgba(0,0,0,0.55);
-      opacity: 1;
-      transition: opacity 1400ms ease;
+      font-size: clamp(16px, 2.1vw, 22px);
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 8px 22px rgba(0,0,0,.45);
+      opacity:1;
+      transition: opacity 1.2s ease;
       pointer-events:none;
+      z-index:10;
     }
-    .entered .introLine{ opacity:0; }
+    .scene.revealed .tagline{ opacity:0; }
 
-    /* ---------- Letter card ---------- */
-    .centerWrap{
-      position:absolute;
-      inset:0;
+    /* Center note overlay */
+    .overlay{
+      position:absolute; inset:0;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding: 18px;
+      padding: 20px;
+      z-index: 20;
     }
 
     .card{
-      width: min(900px, 92vw);
-      border-radius: 18px;
-      background: rgba(247, 241, 230, 0.96);
+      width:min(860px, 92vw);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      background: rgba(248,241,230,.96);
       color: var(--ink);
-      box-shadow: 0 26px 70px rgba(0,0,0,0.45);
-      padding: clamp(18px, 2.2vw, 28px);
-      position: relative;
-      overflow:hidden;
-      transition: transform 600ms ease, opacity 600ms ease, background 600ms ease, color 600ms ease;
-    }
-
-    /* subtle paper grain */
-    .card::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 20% 30%, rgba(0,0,0,0.04), transparent 40%),
-        radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 45%),
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.015), rgba(0,0,0,0.015) 1px, transparent 1px, transparent 7px);
-      opacity:0.35;
-      pointer-events:none;
-      mix-blend-mode: multiply;
-    }
-
-    .cardInner{
+      padding: clamp(22px, 3vw, 34px);
       position:relative;
-      z-index:1;
-      display:grid;
-      gap: 10px;
+      overflow:hidden;
+      transform: translateY(0);
+      transition: opacity 650ms ease, transform 650ms ease, background 500ms ease, color 500ms ease;
     }
 
-    .hello{
-      font-weight:700;
-      font-size: 20px;
-      margin-bottom: 2px;
+    .card:before{
+      content:"";
+      position:absolute; inset:-30%;
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.55), transparent 55%),
+                  radial-gradient(circle at 80% 50%, rgba(255,255,255,.35), transparent 58%);
+      opacity:.5;
+      pointer-events:none;
     }
 
-    .p{
-      line-height:1.55;
-      font-size: 17px;
-      margin:0;
+    .card h2{
+      margin:0 0 10px 0;
+      font-size: clamp(18px, 2.2vw, 24px);
     }
 
-    .sigRow{
-      margin-top: 8px;
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      font-weight:600;
+    .card p{
+      margin: 10px 0;
+      line-height: 1.55;
+      font-size: clamp(15px, 1.6vw, 18px);
     }
-    .sigSmall{
-      font-weight:700;
-      opacity:0.75;
-      font-size: 14px;
-      letter-spacing: 0.02em;
+
+    .sig{
+      margin-top: 18px;
+      font-weight: 650;
+    }
+    .sig small{
+      display:block;
+      margin-top: 6px;
+      opacity:.8;
+      font-weight: 600;
     }
 
     .askRow{
-      margin-top: 12px;
+      margin-top: 18px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 14px;
-      flex-wrap:wrap;
+      gap: 16px;
     }
     .askText{
-      font-weight:800;
-      font-size: 20px;
+      font-weight: 800;
+      font-size: clamp(17px, 2.0vw, 22px);
     }
 
     .btnRow{
       display:flex;
-      gap:10px;
+      gap: 10px;
       align-items:center;
     }
-
-    .btn{
+    button{
       border:0;
       border-radius: 999px;
-      padding: 10px 18px;
-      font-weight:700;
+      padding: 10px 16px;
+      font-weight: 700;
       cursor:pointer;
-      transition: transform 120ms ease, opacity 200ms ease, background 200ms ease, color 200ms ease;
-      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
-      user-select:none;
+      box-shadow: var(--softShadow);
+      transition: transform .12s ease, opacity .2s ease, background .2s ease;
     }
-    .btn:active{ transform: scale(0.98); }
+    button:active{ transform: translateY(1px) scale(.99); }
 
-    .btnYes{
-      background: #161616;
-      color: white;
+    .yes{
+      background:#111;
+      color:#fff;
     }
-    .btnNo{
-      background: #ffffff;
-      color: #111;
-      border: 1px solid rgba(0,0,0,0.12);
+    .no{
+      background:#fff;
+      color:#111;
+      border: 1px solid rgba(0,0,0,.12);
     }
-
-    /* Enter button appears after YES */
-    .enterRow{
+    .reset{
+      background:#fff;
+      color:#111;
+      border: 1px solid rgba(255,255,255,.18);
       display:none;
-      margin-top: 12px;
-      justify-content:flex-end;
-    }
-    .enterBtn{
-      background: #161616;
-      color: white;
-      padding: 11px 18px;
     }
 
     /* NO state */
     .card.nope{
-      background: rgba(14,14,14,0.88);
-      color: rgba(255,255,255,0.92);
-    }
-    .noEmoji{
-      display:none;
-      width:100%;
-      text-align:center;
-      font-size: 38px;
-      margin-top: 16px;
-      margin-bottom: 6px;
-    }
-    .card.nope .noEmoji{
-      display:block;
-    }
-    .resetRow{
-      display:none;
-      margin-top: 10px;
-      justify-content:flex-start;
-    }
-    .resetBtn{
-      background: rgba(255,255,255,0.92);
-      color:#111;
-      border:0;
+      background: rgba(12,12,12,.88);
+      color: #f4f4f4;
     }
 
-    /* Hide ask buttons when answered */
-    .hidden{ display:none !important; }
+    .sadFace{
+      display:none;
+      position:absolute;
+      left:50%;
+      top:58%;
+      transform: translate(-50%,-50%);
+      font-size: 64px;
+      filter: drop-shadow(0 10px 30px rgba(0,0,0,.35));
+      opacity:.95;
+      pointer-events:none;
+    }
+    .card.nope .sadFace{ display:block; }
 
-    /* ---------- Player ---------- */
+    /* Hide overlay when revealed */
+    .overlay.hidden .card{
+      opacity:0;
+      transform: translateY(10px);
+      pointer-events:none;
+    }
+
+    /* Player */
     .playerWrap{
       position:absolute;
       left:50%;
-      bottom: 18px;
+      bottom: clamp(14px, 3vh, 24px);
       transform: translateX(-50%);
-      width: min(760px, calc(100vw - 28px));
-      pointer-events:none; /* enable only on player itself */
+      width: min(780px, 92vw);
+      z-index: 30;
       opacity:0;
+      pointer-events:none;
       transition: opacity 700ms ease, transform 700ms ease;
     }
-    .entered .playerWrap{
-      opacity: 1;
-      transform: translateX(-50%) translateY(0px);
+    .scene.revealed .playerWrap{
+      opacity:1;
+      pointer-events:auto;
+      transform: translateX(-50%) translateY(0);
     }
 
     .player{
-      pointer-events:auto;
-      border-radius: 18px;
-      background: linear-gradient(180deg, rgba(20,20,20,0.35), rgba(20,20,20,0.22));
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.14);
-      box-shadow: 0 22px 60px rgba(0,0,0,0.45);
+      border-radius: 22px;
+      background: rgba(25,25,28,.26);
+      backdrop-filter: blur(18px) saturate(1.1);
+      -webkit-backdrop-filter: blur(18px) saturate(1.1);
+      box-shadow: 0 16px 50px rgba(0,0,0,.35);
       overflow:hidden;
+      border: 1px solid rgba(255,255,255,.08);
     }
 
     .playerHeader{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
-      padding: 12px 14px 6px 14px;
+      gap: 12px;
+      padding: 14px 14px 10px 14px;
     }
 
-    .titleWrap{
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      gap: 2px;
+    .trackMeta{
+      min-width: 0;
     }
-    .title{
+    .trackTitle{
       font-weight: 800;
-      letter-spacing: 0.01em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .titleScroll{
-      display:inline-block;
-      padding-right: 28px;
-      animation: marquee 10s linear infinite;
-      will-change: transform;
-    }
-    .marqueeOff .titleScroll{ animation:none; }
-
-    @keyframes marquee{
-      0%{ transform: translateX(0%); }
-      100%{ transform: translateX(-35%); }
-    }
-
-    .miniBtns{
+      letter-spacing:.2px;
+      font-size: 16px;
       display:flex;
-      gap: 8px;
       align-items:center;
+      gap: 8px;
+      color: rgba(255,255,255,.95);
+    }
+    .heart{
+      color: var(--pink);
+      text-shadow: 0 0 14px rgba(255,126,182,.25);
+    }
+
+    /* marquee */
+    .marquee{
+      min-width:0;
+      overflow:hidden;
+      white-space:nowrap;
+      position:relative;
+      max-width: 52vw;
+    }
+    .marquee span{
+      display:inline-block;
+      padding-right: 40px;
+      animation: marquee 11s linear infinite;
+    }
+    .marquee.paused span{ animation-play-state: paused; }
+    @keyframes marquee{
+      0%{ transform: translateX(0); }
+      100%{ transform: translateX(-50%); }
+    }
+
+    .subTitle{
+      font-size: 12px;
+      opacity:.82;
+      margin-top: 2px;
+      color: rgba(255,255,255,.82);
+    }
+
+    .controlsTop{
+      display:flex;
+      align-items:center;
+      gap: 8px;
     }
 
     .iconBtn{
       width: 34px;
       height: 34px;
       border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,.08);
+      color:#fff;
+      border: 1px solid rgba(255,255,255,.10);
       display:grid;
       place-items:center;
-      cursor:pointer;
-      user-select:none;
+      box-shadow:none;
+      padding:0;
+      opacity:.95;
     }
-    .iconBtn.on{
-      border-color: rgba(255,125,182,0.45);
-      box-shadow: 0 0 0 2px rgba(255,125,182,0.14) inset;
+    .iconBtn.active{
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.22);
     }
 
-    .playerBody{
-      padding: 6px 14px 14px 14px;
-      display:grid;
-      gap: 10px;
+    .barRow{
+      padding: 0 14px 12px 14px;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color: rgba(255,255,255,.85);
     }
 
     .timeRow{
+      margin-top: 4px;
       display:flex;
       justify-content:space-between;
       font-size: 12px;
-      opacity:0.85;
+      color: rgba(255,255,255,.78);
     }
 
-    .progress{
-      width:100%;
-      appearance:none;
-      height: 6px;
+    /* Main transport row (centered) */
+    .transport{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap: 14px;
+      padding: 10px 14px 14px 14px;
+    }
+
+    .tBtn{
+      width: 42px;
+      height: 42px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.18);
-      outline:none;
-      cursor:pointer;
+      background: rgba(255,255,255,.10);
+      color:#fff;
+      border: 1px solid rgba(255,255,255,.12);
+      display:grid;
+      place-items:center;
+      box-shadow:none;
     }
-    .progress::-webkit-slider-thumb{
-      appearance:none;
-      width: 14px;
-      height: 14px;
-      border-radius:50%;
-      background: rgba(255,255,255,0.95);
-      border: 1px solid rgba(0,0,0,0.25);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+    .playBtn{
+      width: 54px;
+      height: 54px;
+      background: rgba(255,255,255,.92);
+      color:#111;
+      border: none;
     }
 
-    .controls{
+    .playerBody{
+      max-height: 260px;
+      transition: max-height 420ms ease;
+      overflow:hidden;
+    }
+    .player.collapsed .playerBody{
+      max-height: 0px;
+    }
+
+    /* Playlist drawer */
+    .drawer{
+      padding: 0 14px 14px 14px;
+    }
+    .list{
+      margin-top: 10px;
+      display:grid;
+      gap: 8px;
+      max-height: 140px;
+      overflow:auto;
+      padding-right: 6px;
+    }
+    .item{
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap: 10px;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      cursor:pointer;
+    }
+    .item:hover{ background: rgba(255,255,255,.085); }
+    .item.active{
+      background: rgba(255,126,182,.14);
+      border-color: rgba(255,126,182,.22);
+    }
+    .item .name{
+      color: rgba(255,255,255,.92);
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .item .artist{
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
       margin-top: 2px;
     }
-
-    .ctrlLeft, .ctrlRight{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-
-    .bigPlay{
-      width: 46px;
-      height: 46px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.92);
-      color:#111;
-      border:0;
-      cursor:pointer;
-      font-weight:900;
-      display:grid;
-      place-items:center;
-      box-shadow: 0 14px 30px rgba(0,0,0,0.35);
-    }
-
-    /* Collapse */
-    .collapsed .playerBody{ display:none; }
-    .collapseHint{
+    .item .dur{
+      color: rgba(255,255,255,.70);
       font-size: 12px;
-      opacity:0.65;
-      margin-top:-2px;
+      font-variant-numeric: tabular-nums;
     }
 
-    /* Mobile tweaks */
-    @media (max-width:520px){
-      .askText{ font-size:18px; }
-      .p{ font-size:16px; }
-      .playerHeader{ padding: 11px 12px 6px 12px; }
-      .playerBody{ padding: 6px 12px 12px 12px; }
+    /* little UI for the “like” */
+    .likeBtn{
+      width:34px;height:34px;border-radius:10px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      display:grid;place-items:center;
+    }
+
+    /* small screens */
+    @media (max-width: 520px){
+      .marquee{ max-width: 56vw; }
+      .trackTitle{ font-size: 14px; }
+      .playerWrap{ width: 94vw; }
+      .card{ width: 94vw; }
+      .askRow{ flex-direction:column; align-items:flex-start; }
+      .btnRow{ align-self:flex-end; }
     }
   </style>
 </head>
 
 <body>
-  <div class="scene" id="scene">
-    <div class="bg"></div>
-    <div class="glassTint" id="glassTint"></div>
-    <div class="stars"></div>
+  <div id="scene" class="scene">
+    <div class="bg" aria-hidden="true"></div>
+    <div class="tint" aria-hidden="true"></div>
 
-    <!-- Clouds (multiple) -->
-    <div class="clouds" id="clouds">
-      <!-- We spawn these in JS so we can stagger nicely -->
+    <div class="stars" id="stars" aria-hidden="true"></div>
+
+    <div class="clouds" id="clouds" aria-hidden="true">
+      <!-- Clouds will be injected -->
     </div>
 
-    <!-- Fireflies -->
-    <canvas id="fireflies"></canvas>
+    <div class="fireflies" id="fireflies" aria-hidden="true"></div>
 
-    <div class="paintTexture"></div>
+    <div class="tagline" id="tagline">I wanted to give you something you could stay in.</div>
 
-    <div class="introLine" id="introLine">I wanted to give you something you could stay in.</div>
-
-    <div class="centerWrap" id="centerWrap">
+    <!-- Overlay (ask note) -->
+    <div class="overlay" id="overlay">
       <div class="card" id="card">
-        <div class="cardInner" id="cardInner">
-          <div class="hello">Hello my love,</div>
+        <div class="sadFace" id="sadFace">😞</div>
 
-          <p class="p">I can’t believe we are already having our first Valentine’s Day.</p>
-          <p class="p">In a way you have been helping turn my life into a work of art.</p>
-          <p class="p">So this is my little ode to you, me, and us.</p>
-          <p class="p">Thank you for being my <b>Muse!</b></p>
+        <h2>Hello my love,</h2>
 
-          <div class="sigRow">
-            <div>– Love Sweets 🍭</div>
-            <div class="sigSmall">V.D 2026</div>
-          </div>
+        <p>I can’t believe we are already having our first Valentine’s Day.</p>
+        <p>In a way you have been helping turn my life into a work of art.</p>
+        <p>So this is my little ode to you, me, and us.</p>
+        <p>Thank you for being my <strong>Muse</strong>!</p>
 
-          <div class="askRow" id="askRow">
-            <div class="askText">Will you be my Valentine? 💗</div>
-            <div class="btnRow" id="btnRow">
-              <button class="btn btnYes" id="yesBtn">Yes</button>
-              <button class="btn btnNo" id="noBtn">No</button>
-            </div>
-          </div>
+        <p class="sig">– Love Sweets 🍭<small>V.D 2026</small></p>
 
-          <div class="enterRow" id="enterRow">
-            <button class="btn enterBtn" id="enterBtn">Enter the painting</button>
-          </div>
-
-          <div class="noEmoji" id="noEmoji">☹️</div>
-          <div class="resetRow" id="resetRow">
-            <button class="btn resetBtn" id="resetBtn">Reset</button>
+        <div class="askRow" id="askRow">
+          <div class="askText">Will you be my Valentine? <span class="heart">💗</span></div>
+          <div class="btnRow" id="btnRow">
+            <button class="yes" id="yesBtn">Yes</button>
+            <button class="no" id="noBtn">No</button>
+            <button class="reset" id="resetBtn">Reset</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Player (hidden until entered) -->
-    <div class="playerWrap" id="playerWrap" style="opacity:0;">
-      <div class="player" id="player">
+    <!-- Player -->
+    <div class="playerWrap" id="playerWrap">
+      <div class="player collapsed" id="player">
         <div class="playerHeader">
-          <div class="titleWrap" id="titleWrap">
-            <div class="title marqueeOff" id="titleLine">
-              <span class="titleScroll" id="titleScroll">To My Everything 💗</span>
+          <div class="trackMeta">
+            <div class="trackTitle">
+              <div class="marquee paused" id="marquee">
+                <span id="trackLineA">To My Everything <span class="heart">💗</span> • </span>
+                <span id="trackLineB">To My Everything <span class="heart">💗</span> • </span>
+              </div>
             </div>
-            <div class="collapseHint" id="subtitleHint">romantic playlist</div>
+            <div class="subTitle" id="subTitle">V.D 2026 playlist</div>
           </div>
 
-          <div class="miniBtns">
-            <div class="iconBtn" id="shuffleBtn" title="Shuffle">🔀</div>
-            <div class="iconBtn" id="repeatBtn" title="Repeat">🔁</div>
-            <div class="iconBtn" id="collapseBtn" title="Collapse / Expand">▾</div>
+          <div class="controlsTop">
+            <button class="iconBtn" id="shuffleBtn" title="Shuffle">🔀</button>
+            <button class="iconBtn" id="repeatBtn" title="Repeat">🔁</button>
+            <button class="iconBtn" id="collapseBtn" title="Expand / Collapse">▾</button>
+            <div class="likeBtn" title="Love">♡</div>
           </div>
         </div>
 
         <div class="playerBody" id="playerBody">
-          <input class="progress" id="progress" type="range" min="0" max="100" value="0" />
-          <div class="timeRow">
-            <div id="curTime">0:00</div>
-            <div id="durTime">0:00</div>
+          <div class="barRow">
+            <input id="seek" type="range" min="0" max="1000" value="0" />
+            <div class="timeRow">
+              <span id="tCur">0:00</span>
+              <span id="tDur">0:00</span>
+            </div>
           </div>
 
-          <div class="controls">
-            <div class="ctrlLeft">
-              <button class="iconBtn" id="prevBtn" title="Previous">⏮</button>
-              <button class="bigPlay" id="playBtn" title="Play / Pause">▶</button>
-              <button class="iconBtn" id="nextBtn" title="Next">⏭</button>
-            </div>
-            <div class="ctrlRight">
-              <div class="iconBtn" id="likeBtn" title="Like">♡</div>
-            </div>
+          <div class="transport">
+            <button class="tBtn" id="prevBtn" title="Previous">⏮</button>
+            <button class="playBtn" id="playBtn" title="Play / Pause">▶</button>
+            <button class="tBtn" id="nextBtn" title="Next">⏭</button>
+          </div>
+
+          <div class="drawer">
+            <div class="list" id="list"></div>
           </div>
         </div>
-
-        <audio id="audio" preload="metadata"></audio>
       </div>
+
+      <audio id="audio" preload="metadata"></audio>
     </div>
   </div>
 
   <script>
-    // -----------------------
-    // Playlist (your filenames)
-    // -----------------------
+    // ---------- Playlist (your file names + your song/artist mapping) ----------
     const playlist = [
       { file: "everything.mp3", title: "Everything", artist: "Gotts Street Park feat. Rosie Lowe" },
-      { file: "POV.mp3", title: "pov", artist: "Ariana Grande" },
-      { file: "IIHANDS.mp3", title: "II HANDS II HEAVEN", artist: "Beyoncé" },
-      { file: "Sweet.mp3", title: "Sweet Love", artist: "Anita Baker" },
-      { file: "OurLove.mp3", title: "Our Love", artist: "Curtis Harding & Jazmine Sullivan" },
-      { file: "Floating.mp3", title: "Floating", artist: "Alina Baraz" },
-      { file: "All.mp3", title: "All In", artist: "Desiree Dawson" },
-      { file: "End.mp3", title: "End of the Night", artist: "Kenny G" },
-      { file: "Myone.mp3", title: "My One and Only Love", artist: "John Coltrane" },
-      { file: "Ribbon.mp3", title: "Ribbon in the Sky", artist: "Stevie Wonder" },
-      { file: "Nothing.mp3", title: "Nothing Even Matters", artist: "Lauryn Hill" },
+      { file: "POV.mp3",       title: "pov",       artist: "Ariana Grande" },
+      { file: "IIHANDS.mp3",   title: "II HANDS II HEAVEN", artist: "Beyoncé" },
+      { file: "Sweet.mp3",     title: "Sweet Love", artist: "Anita Baker" },
+      { file: "OurLove.mp3",   title: "Our Love", artist: "Curtis Harding & Jazmine Sullivan" },
+      { file: "Floating.mp3",  title: "Floating", artist: "Alina Baraz" },
+      { file: "All.mp3",       title: "All In", artist: "Desirée Dawson" },
+      { file: "End.mp3",       title: "End of the Night", artist: "Kenny G" },
+      { file: "Myone.mp3",     title: "My One and Only Love", artist: "John Coltrane" },
+      { file: "Ribbon.mp3",    title: "Ribbon in the Sky", artist: "Stevie Wonder" },
+      { file: "Nothing.mp3",   title: "Nothing Even Matters", artist: "Lauryn Hill" }
     ];
 
-    // -----------------------
-    // Elements
-    // -----------------------
+    // ---------- Elements ----------
     const scene = document.getElementById("scene");
+    const overlay = document.getElementById("overlay");
     const card = document.getElementById("card");
     const askRow = document.getElementById("askRow");
     const btnRow = document.getElementById("btnRow");
+
     const yesBtn = document.getElementById("yesBtn");
-    const noBtn  = document.getElementById("noBtn");
-    const enterRow = document.getElementById("enterRow");
-    const enterBtn = document.getElementById("enterBtn");
-    const resetRow = document.getElementById("resetRow");
+    const noBtn = document.getElementById("noBtn");
     const resetBtn = document.getElementById("resetBtn");
+
     const playerWrap = document.getElementById("playerWrap");
+    const player = document.getElementById("player");
+    const collapseBtn = document.getElementById("collapseBtn");
 
-    const cloudsEl = document.getElementById("clouds");
-    const canvas = document.getElementById("fireflies");
-    const ctx = canvas.getContext("2d");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const repeatBtn = document.getElementById("repeatBtn");
 
-    // Player
     const audio = document.getElementById("audio");
+    const seek = document.getElementById("seek");
+    const tCur = document.getElementById("tCur");
+    const tDur = document.getElementById("tDur");
+
     const playBtn = document.getElementById("playBtn");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-    const progress = document.getElementById("progress");
-    const curTime = document.getElementById("curTime");
-    const durTime = document.getElementById("durTime");
-    const titleLine = document.getElementById("titleLine");
-    const titleScroll = document.getElementById("titleScroll");
-    const shuffleBtn = document.getElementById("shuffleBtn");
-    const repeatBtn = document.getElementById("repeatBtn");
-    const collapseBtn = document.getElementById("collapseBtn");
-    const player = document.getElementById("player");
-    const likeBtn = document.getElementById("likeBtn");
 
-    // -----------------------
-    // State
-    // -----------------------
-    let answeredYes = false;
-    let entered = false;
+    const listEl = document.getElementById("list");
+    const marquee = document.getElementById("marquee");
+    const trackLineA = document.getElementById("trackLineA");
+    const trackLineB = document.getElementById("trackLineB");
+    const subTitle = document.getElementById("subTitle");
 
-    let idx = 0;
-    let isPlaying = false;
-    let shuffle = false;
-    let repeat = false;
+    const starsEl = document.getElementById("stars");
+    const cloudsEl = document.getElementById("clouds");
+    const firefliesEl = document.getElementById("fireflies");
 
-    // For shuffle history
-    let order = playlist.map((_, i) => i);
-    let shuffleBag = [];
+    // ---------- State ----------
+    let currentIndex = 0;
+    let isShuffle = false;
+    let isRepeat = false;
+    let userHasEntered = false;
 
-    // Likes (local only)
-    let liked = new Set();
-
-    // -----------------------
-    // Helpers
-    // -----------------------
-    function formatTime(sec){
+    // ---------- Helpers ----------
+    function padTime(sec){
       if(!isFinite(sec) || sec < 0) return "0:00";
-      const m = Math.floor(sec/60);
-      const s = Math.floor(sec%60);
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
       return `${m}:${String(s).padStart(2,"0")}`;
     }
 
-    function setTitlePaused(){
-      titleScroll.textContent = "To My Everything 💗";
-      titleLine.classList.add("marqueeOff");
+    function setMarqueeText(text){
+      // duplicate text so marquee loops cleanly
+      trackLineA.innerHTML = `${text} • `;
+      trackLineB.innerHTML = `${text} • `;
     }
 
-    function setTitleTrack(){
-      const t = playlist[idx];
-      titleScroll.textContent = `${t.title} — ${t.artist}`;
-      // marquee only if long
-      requestAnimationFrame(() => {
-        const tooLong = titleScroll.scrollWidth > titleLine.clientWidth + 20;
-        titleLine.classList.toggle("marqueeOff", !tooLong);
+    function updateListUI(){
+      [...listEl.children].forEach((row, i)=>{
+        row.classList.toggle("active", i === currentIndex);
       });
     }
 
-    function loadTrack(i){
-      idx = (i + playlist.length) % playlist.length;
-      audio.src = playlist[idx].file;
-      audio.load();
-      progress.value = 0;
-      curTime.textContent = "0:00";
-      durTime.textContent = "0:00";
-      if(isPlaying){
-        // Must be user-gesture initiated on iOS; here we only call play after they've clicked enter/play.
-        audio.play().catch(()=>{});
-      }
-      setTitleTrack();
-      updateLikeUI();
-    }
+    function loadTrack(index, autoplay=false){
+      currentIndex = (index + playlist.length) % playlist.length;
+      const tr = playlist[currentIndex];
+      audio.src = tr.file;
 
-    function nextIndex(){
-      if(!shuffle) return (idx + 1) % playlist.length;
+      // label when playing: "song — artist"
+      const label = `${tr.title} — ${tr.artist}`;
+      setMarqueeText(label);
+      marquee.classList.remove("paused");
+      subTitle.textContent = "V.D 2026 playlist";
 
-      if(shuffleBag.length === 0){
-        shuffleBag = order.filter(i => i !== idx);
-        // Fisher-Yates shuffle
-        for(let i = shuffleBag.length - 1; i > 0; i--){
-          const j = Math.floor(Math.random() * (i+1));
-          [shuffleBag[i], shuffleBag[j]] = [shuffleBag[j], shuffleBag[i]];
-        }
-      }
-      return shuffleBag.pop();
-    }
+      updateListUI();
 
-    function prevIndex(){
-      // simple prev
-      return (idx - 1 + playlist.length) % playlist.length;
-    }
+      // wait for metadata to paint duration
+      audio.addEventListener("loadedmetadata", () => {
+        tDur.textContent = padTime(audio.duration);
+      }, { once:true });
 
-    function updateLikeUI(){
-      const key = playlist[idx].file;
-      const on = liked.has(key);
-      likeBtn.textContent = on ? "♥" : "♡";
-      likeBtn.classList.toggle("on", on);
-    }
-
-    // -----------------------
-    // YES / NO flow
-    // -----------------------
-    yesBtn.addEventListener("click", () => {
-      answeredYes = true;
-
-      // Replace buttons with enter button
-      btnRow.classList.add("hidden");
-      enterRow.style.display = "flex";
-
-      // Slight little “relief” motion
-      card.style.transform = "translateY(-2px)";
-      setTimeout(()=> card.style.transform = "translateY(0px)", 200);
-    });
-
-    enterBtn.addEventListener("click", () => {
-      entered = true;
-      scene.classList.add("entered");
-
-      // Hide card smoothly
-      document.getElementById("centerWrap").style.pointerEvents = "none";
-      card.style.opacity = "0";
-      card.style.transform = "translateY(10px)";
-      setTimeout(() => {
-        document.getElementById("centerWrap").style.display = "none";
-      }, 520);
-
-      // Show player
-      playerWrap.style.opacity = "1";
-
-      // Start ambience layers
-      startClouds();
-      resizeCanvas();
-      initFireflies();
-      requestAnimationFrame(loopFireflies);
-
-      // Load first track but keep paused until user hits play
-      loadTrack(0);
-      setTitlePaused();
-    });
-
-    noBtn.addEventListener("click", () => {
-      // Turn card black, hide ask row, show reset + centered emoji
-      card.classList.add("nope");
-      askRow.classList.add("hidden");
-      resetRow.style.display = "flex";
-    });
-
-    resetBtn.addEventListener("click", () => {
-      // simplest: reload to restore everything cleanly
-      window.location.reload();
-    });
-
-    // -----------------------
-    // Clouds (staggered, full drift, fade out)
-    // -----------------------
-    function startClouds(){
-      // Clear any existing
-      cloudsEl.innerHTML = "";
-
-      const cloudSpecs = [
-        { top: 10, scale: 1.05, dur: 78, delay: 0,   op: 0.42 },
-        { top: 18, scale: 0.85, dur: 92, delay: 12,  op: 0.30 },
-        { top: 26, scale: 1.20, dur: 88, delay: 24,  op: 0.28 },
-        { top: 14, scale: 0.95, dur: 84, delay: 36,  op: 0.33 },
-        { top: 30, scale: 0.75, dur: 96, delay: 48,  op: 0.22 },
-      ];
-
-      cloudSpecs.forEach((c, n) => {
-        const img = document.createElement("img");
-        img.src = "cloud.png"; // your file name
-        img.className = "cloud";
-        img.style.top = c.top + "%";
-        img.style.opacity = "0";
-        img.style.transform = `translateX(-10vw) scale(${c.scale})`;
-        img.style.animationDuration = c.dur + "s";
-        img.style.animationDelay = c.delay + "s";
-        img.style.filter = `blur(0.25px) brightness(0.92)`;
-        img.style.mixBlendMode = "screen";
-        img.style.setProperty("opacity", c.op);
-
-        // Override per-element opacity inside keyframes by using a wrapper via CSS var:
-        img.style.setProperty("--cloudOp", c.op);
-
-        // Instead: set base opacity and let keyframes handle fade
-        img.style.opacity = "0";
-        img.style.animationName = "cloudDrift";
-        img.style.animationTimingFunction = "linear";
-        img.style.animationIterationCount = "infinite";
-
-        // Slight per-cloud horizontal offset randomness
-        img.style.left = (-60 - n*8) + "%";
-
-        // Use dataset to store intended mid opacity
-        img.dataset.midOpacity = String(c.op);
-
-        cloudsEl.appendChild(img);
-
-        // Hack: enforce mid opacity during the run by adjusting on animation events
-        img.addEventListener("animationiteration", () => {
-          // nothing needed; keeps staggering
-        });
-      });
-
-      // Make clouds visible (entered class handles opacity on container)
-    }
-
-    // -----------------------
-    // Fireflies (canvas)
-    // -----------------------
-    let flies = [];
-    function resizeCanvas(){
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      canvas.width  = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      canvas.style.width = window.innerWidth + "px";
-      canvas.style.height = window.innerHeight + "px";
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    window.addEventListener("resize", () => {
-      if(!entered) return;
-      resizeCanvas();
-      initFireflies();
-    });
-
-    function initFireflies(){
-      flies = [];
-      const count = Math.round(Math.min(85, Math.max(45, window.innerWidth / 18)));
-      for(let i=0; i<count; i++){
-        const yBias = Math.random() ** 0.55; // more near bottom
-        const y = window.innerHeight * (0.55 + 0.45*yBias);
-        flies.push({
-          x: Math.random()*window.innerWidth,
-          y,
-          r: 1 + Math.random()*1.6,
-          vx: (Math.random()-0.5)*0.18,
-          vy: (Math.random()-0.5)*0.10,
-          phase: Math.random()*Math.PI*2,
-          tw: 0.7 + Math.random()*1.6
-        });
-      }
-    }
-
-    function loopFireflies(t){
-      if(!entered) return;
-      ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-
-      // soft glow
-      for(const f of flies){
-        f.phase += 0.02 * f.tw;
-        const flicker = 0.35 + 0.65*Math.abs(Math.sin(f.phase));
-
-        f.x += f.vx;
-        f.y += f.vy + Math.sin(f.phase)*0.05;
-
-        // wrap
-        if(f.x < -10) f.x = window.innerWidth + 10;
-        if(f.x > window.innerWidth + 10) f.x = -10;
-        if(f.y < window.innerHeight*0.52) f.y = window.innerHeight*0.92;
-        if(f.y > window.innerHeight + 10) f.y = window.innerHeight*0.55;
-
-        const alpha = 0.10 + 0.24*flicker;
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 205, 120, ${alpha})`;
-        ctx.shadowColor = `rgba(255, 205, 120, ${alpha})`;
-        ctx.shadowBlur = 14;
-        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
-        ctx.fill();
-      }
-
-      requestAnimationFrame(loopFireflies);
-    }
-
-    // -----------------------
-    // Player interactions
-    // -----------------------
-    playBtn.addEventListener("click", async () => {
-      if(!entered) return; // should not happen
-      try{
-        if(!audio.src) loadTrack(0);
-
-        if(audio.paused){
-          await audio.play();
-          isPlaying = true;
-          playBtn.textContent = "❚❚";
-          setTitleTrack();
-        }else{
-          audio.pause();
-          isPlaying = false;
+      if(autoplay){
+        audio.play().then(()=>{
+          playBtn.textContent = "⏸";
+        }).catch(()=>{
+          // autoplay blocked until user gesture — keep paused
           playBtn.textContent = "▶";
-          setTitlePaused();
-        }
-      }catch(e){
-        // If autoplay/gesture issues occur, user clicking play again will work.
-        console.warn(e);
+        });
+      } else {
+        playBtn.textContent = "▶";
       }
+    }
+
+    function setIdleTitle(){
+      setMarqueeText(`To My Everything <span class="heart">💗</span>`);
+      marquee.classList.add("paused");
+      subTitle.textContent = "V.D 2026 playlist";
+    }
+
+    function nextTrack(autoplay=true){
+      if(isShuffle){
+        let pick = Math.floor(Math.random()*playlist.length);
+        if(playlist.length > 1){
+          while(pick === currentIndex) pick = Math.floor(Math.random()*playlist.length);
+        }
+        loadTrack(pick, autoplay);
+      } else {
+        loadTrack(currentIndex + 1, autoplay);
+      }
+    }
+
+    function prevTrack(){
+      loadTrack(currentIndex - 1, true);
+    }
+
+    // ---------- Build playlist UI ----------
+    function buildList(){
+      listEl.innerHTML = "";
+      playlist.forEach((tr, i)=>{
+        const row = document.createElement("div");
+        row.className = "item";
+        row.innerHTML = `
+          <div>
+            <div class="name">${tr.title}</div>
+            <div class="artist">${tr.artist}</div>
+          </div>
+          <div class="dur" data-dur="${tr.file}">--:--</div>
+        `;
+        row.addEventListener("click", ()=>{
+          loadTrack(i, true);
+        });
+        listEl.appendChild(row);
+
+        // Try to fetch duration in the background (optional)
+        const probe = new Audio(tr.file);
+        probe.preload = "metadata";
+        probe.addEventListener("loadedmetadata", ()=>{
+          const durEl = row.querySelector(".dur");
+          durEl.textContent = padTime(probe.duration);
+          probe.src = "";
+        }, { once:true });
+      });
+      updateListUI();
+    }
+
+    // ---------- Particles: stars + fireflies ----------
+    function makeStars(count=120){
+      starsEl.innerHTML = "";
+      const W = window.innerWidth, H = window.innerHeight;
+      for(let i=0;i<count;i++){
+        const s = document.createElement("div");
+        s.className = "star";
+        const x = Math.random()*W;
+        const y = Math.random()*H*0.75; // mostly sky
+        const size = (Math.random()<0.15) ? 3 : 2;
+        s.style.left = x+"px";
+        s.style.top = y+"px";
+        s.style.width = size+"px";
+        s.style.height = size+"px";
+        s.style.opacity = (0.12 + Math.random()*0.55).toFixed(2);
+        s.style.setProperty("--tw", (2.6 + Math.random()*4.8).toFixed(2)+"s");
+        starsEl.appendChild(s);
+      }
+    }
+
+    function makeFireflies(count=26){
+      firefliesEl.innerHTML = "";
+      const W = window.innerWidth, H = window.innerHeight;
+      for(let i=0;i<count;i++){
+        const f = document.createElement("div");
+        f.className = "fly";
+        // place them mostly lower third
+        const x = Math.random()*W;
+        const y = H*(0.55 + Math.random()*0.38);
+        f.style.left = x+"px";
+        f.style.top = y+"px";
+        f.style.setProperty("--fd", (8 + Math.random()*10).toFixed(2)+"s");
+        f.style.setProperty("--bd", (2.4 + Math.random()*3.6).toFixed(2)+"s");
+        f.style.setProperty("--dx", ((Math.random()*40)-20).toFixed(0)+"px");
+        f.style.setProperty("--dy", ((Math.random()*34)-17).toFixed(0)+"px");
+        firefliesEl.appendChild(f);
+      }
+    }
+
+    // ---------- Clouds: multiple layers, slow drift ----------
+    function makeClouds(){
+      cloudsEl.innerHTML = "";
+      const clouds = [
+        { top:"16%", w:"62vw", op:.42, blur:"0px", dur:"120s", delay:"0s"  },
+        { top:"22%", w:"54vw", op:.32, blur:"1px", dur:"110s", delay:"-22s"},
+        { top:"12%", w:"70vw", op:.24, blur:"2px", dur:"140s", delay:"-55s"},
+        { top:"28%", w:"46vw", op:.28, blur:"1.5px", dur:"130s", delay:"-80s"},
+      ];
+      clouds.forEach(cfg=>{
+        const img = document.createElement("img");
+        img.className = "cloud";
+        img.src = "cloud.png";
+        img.alt = "";
+        img.style.setProperty("--top", cfg.top);
+        img.style.setProperty("--w", cfg.w);
+        img.style.setProperty("--op", cfg.op);
+        img.style.setProperty("--blur", cfg.blur);
+        img.style.setProperty("--dur", cfg.dur);
+        img.style.setProperty("--delay", cfg.delay);
+        cloudsEl.appendChild(img);
+      });
+    }
+
+    // ---------- Reveal logic ----------
+    function revealPainting(){
+      if(userHasEntered) return;
+      userHasEntered = true;
+
+      // hide overlay card with fade, keep tagline fading automatically via CSS
+      overlay.classList.add("hidden");
+
+      // reveal scene + player
+      scene.classList.add("revealed");
+
+      // open player by default on desktop, collapsed on small screens
+      if(window.innerWidth <= 520){
+        player.classList.add("collapsed");
+        collapseBtn.textContent = "▴";
+      } else {
+        player.classList.remove("collapsed");
+        collapseBtn.textContent = "▾";
+      }
+
+      // init ambience
+      makeStars(140);
+      makeFireflies(28);
+      makeClouds();
+    }
+
+    // ---------- NO logic ----------
+    function setNoState(){
+      card.classList.add("nope");
+
+      // remove question line + buttons, show reset only
+      // keep text + signature
+      const askTextEl = askRow.querySelector(".askText");
+      if(askTextEl) askTextEl.style.display = "none";
+
+      yesBtn.style.display = "none";
+      noBtn.style.display = "none";
+      resetBtn.style.display = "inline-block";
+
+      // Ensure overlay stays visible (don’t reveal painting)
+      overlay.classList.remove("hidden");
+    }
+
+    function resetAll(){
+      // stop audio
+      audio.pause();
+      audio.currentTime = 0;
+
+      // reset state
+      userHasEntered = false;
+      scene.classList.remove("revealed");
+      overlay.classList.remove("hidden");
+
+      // reset card
+      card.classList.remove("nope");
+
+      // restore ask UI
+      const askTextEl = askRow.querySelector(".askText");
+      if(askTextEl) askTextEl.style.display = "";
+
+      yesBtn.style.display = "";
+      noBtn.style.display = "";
+      resetBtn.style.display = "none";
+
+      // reset player
+      player.classList.add("collapsed");
+      collapseBtn.textContent = "▴";
+      setIdleTitle();
+      playBtn.textContent = "▶";
+      seek.value = 0;
+      tCur.textContent = "0:00";
+      tDur.textContent = "0:00";
+
+      // clear ambience
+      starsEl.innerHTML = "";
+      firefliesEl.innerHTML = "";
+      cloudsEl.innerHTML = "";
+    }
+
+    // ---------- Player interactions ----------
+    collapseBtn.addEventListener("click", ()=>{
+      player.classList.toggle("collapsed");
+      collapseBtn.textContent = player.classList.contains("collapsed") ? "▴" : "▾";
     });
 
-    prevBtn.addEventListener("click", () => {
-      loadTrack(prevIndex());
-      if(isPlaying) audio.play().catch(()=>{});
+    shuffleBtn.addEventListener("click", ()=>{
+      isShuffle = !isShuffle;
+      shuffleBtn.classList.toggle("active", isShuffle);
     });
 
-    nextBtn.addEventListener("click", () => {
-      loadTrack(nextIndex());
-      if(isPlaying) audio.play().catch(()=>{});
+    repeatBtn.addEventListener("click", ()=>{
+      isRepeat = !isRepeat;
+      repeatBtn.classList.toggle("active", isRepeat);
     });
 
-    audio.addEventListener("loadedmetadata", () => {
-      durTime.textContent = formatTime(audio.duration);
-    });
+    playBtn.addEventListener("click", async ()=>{
+      if(!userHasEntered){
+        // if they try to play before entering, treat as YES flow
+        revealPainting();
+      }
 
-    audio.addEventListener("timeupdate", () => {
-      if(!isFinite(audio.duration) || audio.duration <= 0) return;
-      const pct = (audio.currentTime / audio.duration) * 100;
-      progress.value = String(pct);
-      curTime.textContent = formatTime(audio.currentTime);
-    });
-
-    progress.addEventListener("input", () => {
-      if(!isFinite(audio.duration) || audio.duration <= 0) return;
-      const pct = Number(progress.value) / 100;
-      audio.currentTime = pct * audio.duration;
-    });
-
-    audio.addEventListener("ended", () => {
-      if(repeat){
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
+      if(!audio.src){
+        loadTrack(currentIndex, true);
         return;
       }
-      loadTrack(nextIndex());
-      if(isPlaying) audio.play().catch(()=>{});
+
+      if(audio.paused){
+        try{
+          await audio.play();
+          playBtn.textContent = "⏸";
+          marquee.classList.remove("paused");
+        }catch{
+          // browser blocked
+          playBtn.textContent = "▶";
+        }
+      }else{
+        audio.pause();
+        playBtn.textContent = "▶";
+      }
     });
 
-    shuffleBtn.addEventListener("click", () => {
-      shuffle = !shuffle;
-      shuffleBtn.classList.toggle("on", shuffle);
-      if(shuffle) shuffleBag = [];
+    nextBtn.addEventListener("click", ()=> nextTrack(true));
+    prevBtn.addEventListener("click", ()=> prevTrack());
+
+    // Seek updates
+    audio.addEventListener("timeupdate", ()=>{
+      if(!isFinite(audio.duration) || audio.duration <= 0) return;
+      const p = audio.currentTime / audio.duration;
+      seek.value = Math.floor(p * 1000);
+      tCur.textContent = padTime(audio.currentTime);
+      tDur.textContent = padTime(audio.duration);
     });
 
-    repeatBtn.addEventListener("click", () => {
-      repeat = !repeat;
-      repeatBtn.classList.toggle("on", repeat);
+    seek.addEventListener("input", ()=>{
+      if(!isFinite(audio.duration) || audio.duration <= 0) return;
+      const p = Number(seek.value) / 1000;
+      audio.currentTime = p * audio.duration;
     });
 
-    collapseBtn.addEventListener("click", () => {
-      player.classList.toggle("collapsed");
-      collapseBtn.textContent = player.classList.contains("collapsed") ? "▸" : "▾";
+    audio.addEventListener("ended", ()=>{
+      if(isRepeat){
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+      }else{
+        nextTrack(true);
+      }
     });
 
-    likeBtn.addEventListener("click", () => {
-      const key = playlist[idx].file;
-      if(liked.has(key)) liked.delete(key);
-      else liked.add(key);
-      updateLikeUI();
+    // Keep title idle if nothing loaded
+    audio.addEventListener("pause", ()=>{
+      if(audio.currentTime === 0 && !audio.src){
+        setIdleTitle();
+      }
     });
 
-    // Start paused title
-    setTitlePaused();
+    // ---------- Ask buttons ----------
+    yesBtn.addEventListener("click", ()=>{
+      revealPainting();
+      // optional: gently auto-open player after YES
+      player.classList.remove("collapsed");
+      collapseBtn.textContent = "▾";
+    });
+
+    noBtn.addEventListener("click", ()=>{
+      setNoState();
+    });
+
+    resetBtn.addEventListener("click", resetAll);
+
+    // ---------- Init ----------
+    buildList();
+    setIdleTitle();
+
+    // preload first track only as a label (don’t load audio until user interacts)
+    updateListUI();
+
+    // resize rebuild particles for quality
+    window.addEventListener("resize", ()=>{
+      if(scene.classList.contains("revealed")){
+        makeStars(140);
+        makeFireflies(28);
+        // clouds okay as-is
+      }
+    });
   </script>
 </body>
 </html>
