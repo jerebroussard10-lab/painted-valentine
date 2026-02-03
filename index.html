@@ -2,740 +2,890 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Painted Valentine</title>
+
   <style>
     :root{
-      --cream1:#fbf6ea;
-      --cream2:#f4ecd9;
-      --ink: rgba(20,18,18,0.86);
-      --ink2: rgba(20,18,18,0.58);
-      --glass: rgba(255,255,255,0.14);
-      --glass2: rgba(255,255,255,0.09);
-      --stroke: rgba(0,0,0,0.10);
-
-      /* Softer, lighter pink */
-      --pink:#ff8bcf;
-      --pink2:#ffb5df;
-
-      --radius: 18px;
+      --cream: #f7f1e6;
+      --ink: #1a1a1a;
+      --shadow: 0 20px 60px rgba(0,0,0,.28);
+      --shadowSoft: 0 14px 38px rgba(0,0,0,.18);
+      --pink: #ff6fb3; /* lighter pink */
+      --glass: rgba(255,255,255,.10);
+      --glass2: rgba(255,255,255,.18);
+      --stroke: rgba(255,255,255,.25);
+      --ui: rgba(18,18,18,.55);
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; }
-    body{
-      overflow:hidden;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      color: var(--ink);
-      background: var(--cream1);
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #0b0b0b;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: white;
     }
 
-    /* ===== Background stack ===== */
-    .bg{
-      position:fixed;
-      inset:0;
-      z-index:-3;
-      background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(255,215,164,0.12), transparent 60%),
-        radial-gradient(1200px 900px at 85% 40%, rgba(255,124,198,0.10), transparent 60%),
-        radial-gradient(900px 700px at 50% 90%, rgba(86,156,255,0.10), transparent 60%),
-        linear-gradient(180deg, var(--cream1), var(--cream2));
+    /* BACKGROUND STACK */
+    .stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
     }
 
-    /* Painting layer */
-    .painting{
-      position:fixed;
-      inset:-8%;
-      z-index:-2;
-      background-image: url("impressionist-art.jpg");
+    .bg {
+      position: absolute;
+      inset: -6%;
       background-size: cover;
       background-position: center;
-      filter: saturate(1.02) contrast(1.03);
-      transform: scale(1.06);
-      will-change: transform;
-      animation: slowDrift 34s ease-in-out infinite alternate;
-    }
-    @keyframes slowDrift{
-      0%   { transform: scale(1.06) translate3d(-0.6%, -0.3%, 0); }
-      100% { transform: scale(1.06) translate3d(0.6%, 0.3%, 0); }
+      transform: scale(1.04);
+      filter: saturate(1.05) contrast(1.05);
+      transition: opacity 800ms ease, filter 800ms ease;
+      opacity: 1;
     }
 
-    /* Subtle canvas texture */
-    .canvasTexture{
-      position:fixed;
-      inset:0;
-      z-index:-1;
-      background:
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 2px, transparent 5px),
-        repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 2px, transparent 6px);
-      mix-blend-mode: soft-light;
-      opacity: 0.18;
-      pointer-events:none;
-    }
-
-    /* Clouds layer (loop w/ reverse: no hard jump) */
-    .clouds{
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      z-index:0;
-      opacity:0.55;
-      filter: blur(0.6px);
-    }
-    .cloudBand{
-      position:absolute;
-      left:-25%;
-      top:0;
-      width:150%;
-      height:60%;
-      background:
-        radial-gradient(220px 120px at 18% 26%, rgba(255,255,255,0.30), transparent 70%),
-        radial-gradient(260px 140px at 34% 18%, rgba(255,255,255,0.26), transparent 72%),
-        radial-gradient(220px 120px at 52% 24%, rgba(255,255,255,0.22), transparent 70%),
-        radial-gradient(280px 150px at 70% 20%, rgba(255,255,255,0.25), transparent 72%),
-        radial-gradient(250px 140px at 86% 28%, rgba(255,255,255,0.18), transparent 72%);
+    /* Cloud layer (transparent PNG) */
+    .clouds {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .30;
       mix-blend-mode: screen;
-      animation: cloudFloat 22s ease-in-out infinite alternate;
-      transform: translate3d(-1.2%,0,0);
     }
-    .cloudBand.b2{
-      top:6%;
-      opacity:0.7;
-      filter: blur(1.2px);
-      animation-duration: 30s;
-      animation-delay: -7s;
+    .cloud {
+      position: absolute;
+      top: 8%;
+      left: -40%;
+      width: min(1100px, 140vw);
+      height: auto;
+      filter: blur(0.4px);
+      opacity: .85;
+      animation: cloudDrift 70s ease-in-out infinite alternate;
     }
-    @keyframes cloudFloat{
-      0%   { transform: translate3d(-1.5%, -0.2%, 0) scale(1.02); }
-      100% { transform: translate3d(1.5%,  0.2%, 0) scale(1.02); }
-    }
-
-    /* ===== UI containers ===== */
-    .card{
-      position:fixed;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, var(--glass), var(--glass2));
-      border: 1px solid rgba(255,255,255,0.18);
-      box-shadow:
-        0 26px 70px rgba(0,0,0,0.18),
-        inset 0 0 0 1px rgba(255,255,255,0.06);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    .cloud.two {
+      top: 16%;
+      left: -55%;
+      width: min(900px, 120vw);
+      opacity: .55;
+      animation-duration: 92s;
+      animation-delay: -14s;
     }
 
-    /* ===== Music player (Spotify-ish, vertical-ish) ===== */
-    .recordCard{
-      left: 22px;
-      bottom: 22px;
-      width: 330px;
-      height: 170px;
-      padding: 14px;
-      z-index: 4;
+    /* This is the “tinted glass” over the painting BEFORE YES */
+    .tintGlass {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 900ms ease;
+      background:
+        radial-gradient(1200px 900px at 50% 40%, rgba(255,255,255,.10), rgba(0,0,0,.35)),
+        linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.35));
+      backdrop-filter: blur(3px);
     }
 
-    .player{ width:100%; display:flex; flex-direction:column; gap:10px; }
-    .playerTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-
-    .cover{
-      flex: 1;
-      height: 58px;
-      border-radius: 16px;
-      background: rgba(20,18,18,0.58);
-      border: 1px solid rgba(255,255,255,0.16);
-      display:flex; align-items:center; justify-content:center;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
-    }
-    .coverText{
-      font-weight: 900;
-      letter-spacing: 0.2px;
-      color: var(--pink);
-      text-shadow: 0 2px 18px rgba(255,124,198,0.24);
-      user-select:none;
+    /* Slight “museum glass” specular sweep */
+    .tintGlass::after{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background: linear-gradient(110deg,
+        transparent 0%,
+        rgba(255,255,255,.05) 35%,
+        rgba(255,255,255,.12) 46%,
+        rgba(255,255,255,.04) 58%,
+        transparent 70%);
+      transform: translateX(-25%) rotate(1deg);
+      animation: sweep 14s ease-in-out infinite;
+      opacity: .9;
     }
 
-    .iconSmall{
-      appearance:none;
-      width: 44px; height: 44px;
+    @keyframes sweep {
+      0%   { transform: translateX(-25%) rotate(1deg); opacity:.65; }
+      50%  { transform: translateX(12%) rotate(1deg);  opacity:.85; }
+      100% { transform: translateX(-25%) rotate(1deg); opacity:.65; }
+    }
+
+    @keyframes cloudDrift {
+      0%   { transform: translateX(0px) translateY(0px); }
+      100% { transform: translateX(520px) translateY(14px); }
+    }
+
+    /* FOREGROUND UI LAYER */
+    .ui {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    /* NOTE CARD */
+    .noteWrap{
+      width: min(720px, 92vw);
+      position: relative;
+      z-index: 5;
+    }
+
+    .note {
+      background: var(--cream);
+      color: #231f1a;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 34px 34px 26px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 600ms ease, filter 600ms ease, opacity 600ms ease;
+    }
+
+    /* Paper texture */
+    .note::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(900px 600px at 20% 20%, rgba(255,255,255,.55), transparent 60%),
+        radial-gradient(900px 700px at 90% 40%, rgba(0,0,0,.05), transparent 60%),
+        repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0, rgba(0,0,0,.015) 1px, transparent 2px, transparent 6px);
+      opacity: .55;
+      pointer-events:none;
+    }
+
+    .noteInner{
+      position: relative;
+      z-index: 1;
+      line-height: 1.45;
+      font-size: clamp(16px, 2.1vw, 19px);
+    }
+
+    .note h1{
+      margin: 0 0 14px;
+      font-weight: 700;
+      font-size: clamp(18px, 2.4vw, 22px);
+      letter-spacing: .2px;
+    }
+
+    .note p{ margin: 10px 0; }
+
+    .sig{
+      margin-top: 16px;
+      font-weight: 650;
+    }
+    .sig small{
+      display:block;
+      font-weight: 600;
+      opacity: .72;
+      margin-top: 2px;
+    }
+
+    /* Center italic line that fades away */
+    .centerWhisper {
+      position: fixed;
+      left: 50%;
+      top: 18%;
+      transform: translateX(-50%);
+      z-index: 6;
+      font-style: italic;
+      letter-spacing: .2px;
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 12px 36px rgba(0,0,0,.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 900ms ease;
+      text-align:center;
+      padding: 0 14px;
+      width: min(820px, 92vw);
+      font-size: clamp(16px, 2.3vw, 22px);
+    }
+
+    /* Buttons */
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.10);
-      color: rgba(20,18,18,0.70);
-      font-size: 20px;
-      cursor:pointer;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(0,0,0,.18);
+      transition: transform 120ms ease, filter 120ms ease;
+      user-select: none;
     }
-    .iconSmall:hover{ background: rgba(255,255,255,0.16); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(1px) scale(.99); }
 
-    .timeline{
+    .btnYes{
+      background: #1f1f1f;
+      color: #fff;
+    }
+    .btnNo{
+      background: rgba(255,255,255,.8);
+      color: #111;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .btnEnter{
+      background: var(--pink);
+      color: #1b0b12;
+    }
+    .btnReset{
+      background: rgba(255,255,255,.9);
+      color: #111;
+      border: 1px solid rgba(0,0,0,.08);
+      padding: 10px 14px;
+    }
+
+    /* "No" state (paper turns dark) */
+    .note.nope{
+      background: #0d0d0f;
+      color: rgba(255,255,255,.92);
+      filter: saturate(.9);
+    }
+    .note.nope::before{
+      opacity: .25;
+      filter: contrast(1.2);
+    }
+    .noLine{
+      margin-top: 12px;
+      font-weight: 800;
+    }
+
+    /* PLAYER */
+    .player {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      width: min(420px, 92vw);
+      z-index: 8;
+      background: rgba(10,10,10,.42);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      box-shadow: var(--shadowSoft);
+      backdrop-filter: blur(10px);
+      padding: 14px 14px 12px;
+      display: none; /* hidden until they enter */
+    }
+
+    .playerTop{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .trackTitle{
+      font-weight: 800;
+      letter-spacing: .2px;
+      font-size: 15px;
+      line-height: 1.1;
+      color: rgba(255,255,255,.92);
+      overflow: hidden;
+      white-space: nowrap;
+      width: 100%;
+      position: relative;
+    }
+
+    /* Marquee effect container */
+    .marquee{
+      display:inline-block;
+      padding-left: 0;
+      will-change: transform;
+    }
+    .marquee.run{
+      animation: marquee 12s linear infinite;
+    }
+    @keyframes marquee{
+      0%{ transform: translateX(0%); }
+      100%{ transform: translateX(-55%); }
+    }
+
+    .modes {
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+
+    .chip{
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.9);
+      cursor: pointer;
       display:grid;
-      grid-template-columns: 44px 1fr 44px;
+      place-items:center;
+      user-select:none;
+      transition: transform 120ms ease, background 120ms ease;
+      font-size: 14px;
+    }
+    .chip:active{ transform: scale(.98); }
+    .chip.on{
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.24);
+    }
+
+    .progressRow{
+      display:flex;
       align-items:center;
       gap: 10px;
+      margin: 8px 0 10px;
     }
+
     .time{
       font-variant-numeric: tabular-nums;
       font-size: 12px;
-      opacity: 0.72;
-      user-select:none;
-      text-align:center;
+      opacity: .85;
+      min-width: 42px;
+      text-align: center;
     }
 
-    .seek{
+    input[type="range"]{
       -webkit-appearance:none;
       appearance:none;
       width:100%;
-      height: 4px;
+      height: 6px;
       border-radius: 999px;
-      background: linear-gradient(
-        to right,
-        rgba(20,18,18,0.78) 0%,
-        rgba(20,18,18,0.78) var(--fill, 0%),
-        rgba(20,18,18,0.20) var(--fill, 0%),
-        rgba(20,18,18,0.20) 100%
-      );
+      background: rgba(255,255,255,.16);
       outline:none;
       cursor:pointer;
     }
-    .seek::-webkit-slider-thumb{
+    input[type="range"]::-webkit-slider-thumb{
       -webkit-appearance:none;
       appearance:none;
-      width: 14px; height: 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.92);
-      border: 2px solid rgba(0,0,0,0.22);
-    }
-    .seek::-moz-range-thumb{
-      width: 14px; height: 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.92);
-      border: 2px solid rgba(0,0,0,0.22);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(0,0,0,.15);
     }
 
     .controls{
       display:flex;
       align-items:center;
-      justify-content:center;
-      gap: 12px;
-    }
-    .iconBtn{
-      appearance:none;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.10);
-      color: rgba(20,18,18,0.78);
-      border-radius: 999px;
-      width: 42px; height: 42px;
-      display:grid; place-items:center;
-      font-weight: 900;
-      cursor:pointer;
-    }
-    .iconBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.16); }
-    .playBtn{
-      appearance:none;
-      width: 54px; height: 54px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.22);
-      background: rgba(255,255,255,0.16);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.14);
-      font-size: 18px;
-      cursor:pointer;
-    }
-    .playBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.20); }
-
-    /* ===== Phone (NO card wrapper) ===== */
-    .phoneCard{
-      position: fixed;
-      right: 26px;
-      bottom: 26px;
-      z-index: 5;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
     }
 
-    /* Pearlescent white phone body */
-    .phone{
-      width: 140px;
-      height: 220px;
-      border-radius: 28px;
-
-      /* pearlescent */
-      background:
-        radial-gradient(120px 160px at 30% 25%, rgba(255,139,207,0.18), transparent 60%),
-        radial-gradient(140px 180px at 70% 80%, rgba(130,186,255,0.18), transparent 60%),
-        radial-gradient(170px 220px at 50% 50%, rgba(255,255,255,0.85), rgba(245,245,245,0.92) 60%, rgba(255,255,255,0.88)),
-        linear-gradient(145deg, rgba(255,255,255,0.98), rgba(240,240,240,0.96));
-
-      border: 1px solid rgba(0,0,0,0.10);
-      box-shadow:
-        0 22px 60px rgba(0,0,0,0.22),
-        0 2px 0 rgba(255,255,255,0.85) inset,
-        0 -10px 30px rgba(255,255,255,0.25) inset;
-
-      display: grid;
-      place-items: center;
-      padding: 16px;
-      cursor: pointer;
-      transform-origin: center;
-      user-select: none;
-    }
-    .phone:hover{ transform: translateY(-2px); }
-
-    .phoneScreen{
-      width: 100%;
-      height: 150px;
-      border-radius: 18px;
-      background:
-        radial-gradient(120px 160px at 30% 25%, rgba(255,124,198,0.22), transparent 60%),
-        radial-gradient(140px 180px at 70% 80%, rgba(104,166,255,0.22), transparent 60%),
-        rgba(0,0,0,0.08);
-      border: 1px solid rgba(0,0,0,0.10);
-      box-shadow: 0 10px 26px rgba(0,0,0,0.12) inset;
-      position: relative;
-      overflow:hidden;
+    .mainControls{
+      display:flex;
+      gap: 10px;
+      align-items:center;
     }
 
-    /* tiny shimmer on the screen */
-    .phoneScreen:before{
-      content:"";
-      position:absolute;
-      inset:-40%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
-      transform: rotate(18deg);
-      animation: shimmer 4.8s ease-in-out infinite;
-      opacity: 0.5;
-    }
-    @keyframes shimmer{
-      0% { transform: translateX(-20%) rotate(18deg); }
-      50%{ transform: translateX(20%) rotate(18deg); }
-      100%{ transform: translateX(-20%) rotate(18deg); }
-    }
-
-    .phoneHome{
+    .bigPlay{
       width: 46px;
-      height: 6px;
+      height: 46px;
       border-radius: 999px;
-      margin-top: 12px;
-      background: rgba(0,0,0,0.18);
+      background: rgba(255,255,255,.92);
+      border: none;
+      cursor: pointer;
+      display:grid;
+      place-items:center;
+      box-shadow: 0 10px 18px rgba(0,0,0,.22);
     }
 
-    @keyframes vibrate {
-      0% { transform: translate(0,0) rotate(0deg); }
-      15% { transform: translate(-1px, 1px) rotate(-0.4deg); }
-      30% { transform: translate(1px, -1px) rotate(0.4deg); }
-      45% { transform: translate(-2px, 0px) rotate(-0.6deg); }
-      60% { transform: translate(2px, 0px) rotate(0.6deg); }
-      75% { transform: translate(-1px, -1px) rotate(-0.4deg); }
-      100% { transform: translate(0,0) rotate(0deg); }
+    .bigPlay span{
+      color:#101010;
+      font-size: 18px;
+      transform: translateX(1px);
     }
-    .phone.isVibrating{ animation: vibrate 0.45s ease-in-out infinite; }
 
-    /* ===== Chat overlay ===== */
-    .chatOverlay{
+    .tinyBtn{
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.9);
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+      user-select:none;
+      font-size: 14px;
+    }
+
+    /* Manual BG toggle (testing) */
+    #bgToggle {
       position: fixed;
-      inset: 0;
-      display: none;
-      z-index: 10;
-      background: rgba(0,0,0,0.22);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      gap: 6px;
+      opacity: 0.20;
+      z-index: 20;
+      transition: opacity 160ms ease;
+      user-select:none;
     }
-    .chatOverlay.open{ display:block; }
+    #bgToggle:hover { opacity: 0.9; }
+    #bgToggle button {
+      background: rgba(255,255,255,0.55);
+      border: none;
+      border-radius: 999px;
+      width: 34px;
+      height: 34px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(0,0,0,.16);
+    }
 
-    .chatPanel{
-      position:absolute;
+    /* Small hint (optional) */
+    .tinyHint{
+      position: fixed;
       right: 18px;
-      bottom: 18px;
-      width: min(420px, calc(100vw - 36px));
-      height: min(560px, calc(100vh - 36px));
-      border-radius: 26px;
-      background: rgba(255,255,255,0.20);
-      border: 1px solid rgba(255,255,255,0.22);
-      box-shadow: 0 30px 90px rgba(0,0,0,0.26);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .chatHeader{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding: 14px 14px 10px;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.18);
-    }
-    .chatTitle{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      font-weight: 900;
-      letter-spacing: 0.2px;
-      color: rgba(20,18,18,0.84);
-    }
-    .chatSub{
+      top: 14px;
       font-size: 12px;
-      opacity: 0.68;
-      font-weight: 700;
-      margin-top: 2px;
-    }
-    .xBtn{
-      appearance:none;
-      width: 40px; height: 40px;
+      opacity: .65;
+      z-index: 20;
+      background: rgba(0,0,0,.30);
+      padding: 8px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.20);
-      background: rgba(255,255,255,0.14);
-      cursor:pointer;
-      font-weight: 900;
-      color: rgba(20,18,18,0.74);
-    }
-    .xBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.18); }
-
-    .chatBody{
-      flex:1;
-      padding: 14px;
-      overflow:auto;
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(10px);
+      display:none; /* keep hidden */
     }
 
-    .bubbleRow{
-      display:flex;
-      gap: 8px;
-      align-items:flex-end;
-    }
-    .bubbleRow.me{ justify-content:flex-end; }
-    .bubbleRow.them{ justify-content:flex-start; }
-
-    .bubble{
-      max-width: 78%;
-      padding: 10px 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.22);
-      color: rgba(20,18,18,0.84);
-      box-shadow: 0 10px 22px rgba(0,0,0,0.12);
-      line-height: 1.25;
-      font-weight: 700;
-    }
-    .bubble.me{
-      background: rgba(255,139,207,0.18);
-      border-color: rgba(255,139,207,0.18);
-    }
-    .bubble.them{
-      background: rgba(255,255,255,0.22);
-    }
-
-    .choiceRow{
-      display:flex;
-      gap: 10px;
-      margin-top: 6px;
-      justify-content:flex-end;
-    }
-    .choiceBtn{
-      appearance:none;
-      border: 1px solid rgba(255,255,255,0.22);
-      background: rgba(255,255,255,0.16);
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-weight: 900;
-      cursor:pointer;
-      color: rgba(20,18,18,0.82);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.14);
-    }
-    .choiceBtn.yes{
-      background: rgba(255,139,207,0.22);
-      border-color: rgba(255,139,207,0.22);
-    }
-    .choiceBtn:hover{ transform: translateY(-1px); }
-
-    .hint{
-      font-size: 12px;
-      opacity: 0.7;
-      text-align:center;
-      padding: 10px 14px 14px;
-    }
-
-    /* Reduce motion accessibility */
-    @media (prefers-reduced-motion: reduce){
-      .painting, .cloudBand, .phoneScreen:before { animation:none !important; }
-      .phone.isVibrating{ animation:none !important; }
+    @media (max-width: 520px){
+      .note{ padding: 26px 22px 20px; }
+      .player{ left: 12px; right: 12px; width: auto; }
+      #bgToggle{ right: 12px; bottom: 12px; }
     }
   </style>
 </head>
+
 <body>
-  <!-- Background -->
-  <div class="bg"></div>
-  <div class="painting" aria-hidden="true"></div>
-  <div class="clouds" aria-hidden="true">
-    <div class="cloudBand"></div>
-    <div class="cloudBand b2"></div>
-  </div>
-  <div class="canvasTexture" aria-hidden="true"></div>
+  <div class="stage">
+    <div class="bg background"></div>
 
-  <!-- Music player -->
-  <div class="card recordCard">
-    <div class="player">
-      <div class="playerTop">
-        <div class="cover" aria-hidden="true">
-          <div class="coverText">My Everything 💓</div>
+    <div class="clouds" aria-hidden="true">
+      <img class="cloud one" src="cloud.png" alt="">
+      <img class="cloud two" src="cloud.png" alt="">
+    </div>
+
+    <div class="tintGlass" id="tintGlass"></div>
+  </div>
+
+  <div class="centerWhisper" id="centerWhisper">
+    <span>I wanted to give you something you could stay in.</span>
+  </div>
+
+  <div class="ui">
+    <div class="noteWrap">
+      <div class="note" id="note">
+        <div class="noteInner" id="noteInner">
+          <h1>Hello my love,</h1>
+
+          <p>I can’t believe we are already having our first Valentine’s Day.</p>
+          <p>In a way you have been helping turn my life into a work of art.</p>
+          <p>So this is my little ode to you, me, and us.</p>
+          <p>Thank you for being my <b>Muse</b>!</p>
+
+          <div class="sig">
+            – Love Sweets 🍭
+            <small>V.D 2026</small>
+          </div>
+
+          <div class="row" id="askRow">
+            <div style="flex:1; min-width: 220px; font-weight:800;">
+              Will you be my Valentine? 💖
+            </div>
+            <button class="btn btnYes" id="yesBtn">Yes</button>
+            <button class="btn btnNo" id="noBtn">No</button>
+          </div>
+
+          <div class="row" id="enterRow" style="display:none;">
+            <button class="btn btnEnter" id="enterBtn">Enter the painting ✨</button>
+          </div>
+
+          <div class="row" id="resetRow" style="display:none;">
+            <button class="btn btnReset" id="resetBtn">Reset</button>
+          </div>
+
+          <div class="noLine" id="noLine" style="display:none;">
+            ☹️
+          </div>
         </div>
-        <button class="iconSmall" id="likeBtn" aria-label="Like">♡</button>
-      </div>
-
-      <div class="timeline">
-        <div class="time" id="curTime">0:00</div>
-        <input id="seek" class="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek" />
-        <div class="time" id="durTime">0:00</div>
-      </div>
-
-      <div class="controls">
-        <button class="iconBtn" id="prevBtn" aria-label="Rewind 10 seconds">⏮</button>
-        <button class="playBtn" id="playBtn" aria-label="Play/Pause">▶︎</button>
-        <button class="iconBtn" id="nextBtn" aria-label="Skip 10 seconds">⏭</button>
-        <button class="iconBtn" id="muteBtn" aria-label="Mute">🔇</button>
       </div>
     </div>
   </div>
 
-  <!-- Phone (no frosted card) -->
-  <div class="phoneCard">
-    <div class="phone isVibrating" id="phoneBtn" role="button" tabindex="0" aria-label="Open message">
-      <div class="phoneScreen"></div>
-      <div class="phoneHome"></div>
+  <!-- PLAYER (hidden until Enter) -->
+  <div class="player" id="player">
+    <div class="playerTop">
+      <div class="trackTitle" title="">
+        <span class="marquee" id="trackText">To My Everything 💗</span>
+      </div>
+      <div class="modes">
+        <button class="chip" id="shuffleBtn" title="Shuffle">🔀</button>
+        <button class="chip" id="repeatBtn" title="Repeat">🔁</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Chat -->
-  <div class="chatOverlay" id="chatOverlay" aria-hidden="true">
-    <div class="chatPanel" role="dialog" aria-modal="true" aria-label="Message">
-      <div class="chatHeader">
-        <div>
-          <div class="chatTitle">Message <span aria-hidden="true">💗</span></div>
-          <div class="chatSub">a tiny painted universe</div>
-        </div>
-        <button class="xBtn" id="closeChat" aria-label="Close">✕</button>
+    <div class="progressRow">
+      <div class="time" id="tNow">0:00</div>
+      <input type="range" id="seek" min="0" max="1000" value="0" />
+      <div class="time" id="tDur">0:00</div>
+    </div>
+
+    <div class="controls">
+      <div class="mainControls">
+        <button class="tinyBtn" id="prevBtn" title="Prev">⏮</button>
+        <button class="bigPlay" id="playBtn" title="Play/Pause"><span id="playIcon">▶</span></button>
+        <button class="tinyBtn" id="nextBtn" title="Next">⏭</button>
       </div>
 
-      <div class="chatBody" id="chatBody"></div>
-
-      <div class="hint">Tip: music is optional — play it if you want.</div>
+      <button class="tinyBtn" id="heartBtn" title="Love">♡</button>
     </div>
   </div>
 
-  <!-- Audio: rename your file to music.mp3 and keep it in the same folder as index.html -->
-  <audio id="audio" preload="auto" src="music.mp3"></audio>
+  <!-- Manual BG toggle (testing) -->
+  <div id="bgToggle" title="Manual background toggle (testing)">
+    <button data-bg="sunrise">☀️</button>
+    <button data-bg="sunset">🌅</button>
+    <button data-bg="midnight">🌙</button>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
 
   <script>
-    // ===== Helpers =====
-    const $ = (sel) => document.querySelector(sel);
+    // ---------------------------
+    // BACKGROUNDS (auto + manual)
+    // ---------------------------
+    const bgEl = document.querySelector(".background");
+    const tintGlass = document.getElementById("tintGlass");
 
-    // ===== AUDIO (simple + synced timeline) =====
-    const audio = $('#audio');
-    const playBtn = $('#playBtn');
-    const muteBtn = $('#muteBtn');
-    const seek = $('#seek');
-    const curTimeEl = $('#curTime');
-    const durTimeEl = $('#durTime');
-    const likeBtn = $('#likeBtn');
+    const backgrounds = {
+      sunrise: "Sunrise.png",
+      sunset: "Sunset.png",
+      midnight: "Midnight.png",
+    };
 
-    let isSeeking = false;
-    let liked = false;
-
-    function fmt(t){
-      if (!isFinite(t)) return "0:00";
-      const m = Math.floor(t / 60);
-      const s = Math.floor(t % 60);
-      return `${m}:${String(s).padStart(2,'0')}`;
-    }
-    function setFill(){
-      const p = (Number(seek.value) / Number(seek.max)) * 100;
-      seek.style.setProperty('--fill', `${p}%`);
-    }
-    function syncUI(){
-      curTimeEl.textContent = fmt(audio.currentTime);
-      durTimeEl.textContent = fmt(audio.duration);
-
-      const max = Number(seek.max);
-      const v = audio.duration ? Math.round((audio.currentTime / audio.duration) * max) : 0;
-      seek.value = String(v);
-      setFill();
-    }
-    function setPlayIcon(){
-      playBtn.textContent = audio.paused ? "▶︎" : "⏸";
+    function getAutoBgKey(){
+      const h = new Date().getHours();
+      // Adjust if you want different cutoffs
+      if (h >= 6 && h < 16) return "sunrise";   // morning/day
+      if (h >= 16 && h < 20) return "sunset";   // golden/evening
+      return "midnight";                        // night
     }
 
-    audio.addEventListener('loadedmetadata', () => { syncUI(); setPlayIcon(); });
-    audio.addEventListener('timeupdate', () => { if (!isSeeking) syncUI(); });
+    function setBackground(key){
+      const url = backgrounds[key] || backgrounds.sunrise;
+      bgEl.style.opacity = 0;
 
-    playBtn.addEventListener('click', async () => {
-      try{
-        if (audio.paused) await audio.play();
-        else audio.pause();
-      }catch(e){ console.log(e); }
-      setPlayIcon();
-    });
-
-    muteBtn.addEventListener('click', () => {
-      audio.muted = !audio.muted;
-      muteBtn.textContent = audio.muted ? "🔈" : "🔇";
-    });
-
-    likeBtn.addEventListener('click', () => {
-      liked = !liked;
-      likeBtn.textContent = liked ? "♥" : "♡";
-      likeBtn.style.color = liked ? "var(--pink)" : "rgba(20,18,18,0.70)";
-    });
-
-    seek.addEventListener('pointerdown', () => { isSeeking = true; });
-    seek.addEventListener('pointerup',   () => { isSeeking = false; });
-
-    seek.addEventListener('input', () => {
-      setFill();
-      const max = Number(seek.max);
-      const t = audio.duration ? (Number(seek.value) / max) * audio.duration : 0;
-      curTimeEl.textContent = fmt(t);
-    });
-
-    seek.addEventListener('change', () => {
-      const max = Number(seek.max);
-      const t = audio.duration ? (Number(seek.value) / max) * audio.duration : 0;
-      audio.currentTime = t;
-      syncUI();
-    });
-
-    // Rewind/skip 10s (cute + useful)
-    $('#prevBtn')?.addEventListener('click', () => {
-      audio.currentTime = Math.max(0, audio.currentTime - 10);
-      syncUI();
-    });
-    $('#nextBtn')?.addEventListener('click', () => {
-      audio.currentTime = Math.min(audio.duration || 999999, audio.currentTime + 10);
-      syncUI();
-    });
-
-    audio.addEventListener('play', setPlayIcon);
-    audio.addEventListener('pause', setPlayIcon);
-
-    setFill();
-    setPlayIcon();
-
-    // ===== Chat / Phone =====
-    const phoneBtn = $('#phoneBtn');
-    const overlay = $('#chatOverlay');
-    const chatBody = $('#chatBody');
-    const closeChat = $('#closeChat');
-
-    const heartPool = ["💗","💖","💕","❤️‍🔥","💘","💞","❤️","🩷","❣️"];
-    const pickHeart = () => heartPool[Math.floor(Math.random()*heartPool.length)];
-
-    function appendBubble(who, text){
-      const row = document.createElement('div');
-      row.className = `bubbleRow ${who}`;
-
-      const b = document.createElement('div');
-      b.className = `bubble ${who}`;
-      b.textContent = text;
-
-      row.appendChild(b);
-      chatBody.appendChild(row);
-      chatBody.scrollTop = chatBody.scrollHeight;
-      return row;
+      setTimeout(() => {
+        bgEl.style.backgroundImage = `url('${url}')`;
+        bgEl.style.opacity = 1;
+      }, 450);
     }
 
-    function appendAsk(){
-      const row = appendBubble('me', `Will you be my Valentine? ${pickHeart()}`);
+    // Init background
+    setBackground(getAutoBgKey());
 
-      const choices = document.createElement('div');
-      choices.className = 'choiceRow';
+    // Re-check hourly in auto mode (simple)
+    setInterval(() => {
+      if (!manualBgMode) setBackground(getAutoBgKey());
+    }, 60 * 60 * 1000);
 
-      const yes = document.createElement('button');
-      yes.className = 'choiceBtn yes';
-      yes.textContent = 'Yes';
-
-      const no = document.createElement('button');
-      no.className = 'choiceBtn';
-      no.textContent = 'No';
-
-      choices.appendChild(yes);
-      choices.appendChild(no);
-      row.appendChild(choices);
-
-      yes.addEventListener('click', () => {
-        appendBubble('them', `Yes ${pickHeart()}`);
-        appendBubble('me', `Achievement Unlocked: Valentine ${pickHeart()}`);
-        appendBubble('me', `You’re my favorite person. For real.`);
-        row.remove();
+    // Manual toggle (testing)
+    let manualBgMode = false;
+    document.querySelectorAll("#bgToggle button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        manualBgMode = true;
+        setBackground(btn.dataset.bg);
       });
+    });
 
-      // playful "no" (dodges clicks) — optional, but cute
-      let dodges = 0;
-      const maxDodges = 6;
-      no.addEventListener('pointerenter', () => {
-        if (dodges >= maxDodges) return;
-        dodges++;
-        const dx = (Math.random()*140 - 70);
-        const dy = (Math.random()*60 - 30);
-        no.style.transform = `translate(${dx}px, ${dy}px)`;
-      });
-      no.addEventListener('click', () => {
-        appendBubble('them', `No 😈`);
-        appendBubble('me', `Okay okay 😂 resetting that question…`);
-        setTimeout(() => {
-          row.remove();
-          appendAsk();
-        }, 650);
-      });
+    // ---------------------------
+    // DAY 2: NOTE FLOW
+    // ---------------------------
+    const note = document.getElementById("note");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn = document.getElementById("noBtn");
+    const askRow = document.getElementById("askRow");
+    const enterRow = document.getElementById("enterRow");
+    const enterBtn = document.getElementById("enterBtn");
+    const resetRow = document.getElementById("resetRow");
+    const resetBtn = document.getElementById("resetBtn");
+    const noLine = document.getElementById("noLine");
+    const centerWhisper = document.getElementById("centerWhisper");
+
+    let accepted = false;
+    let entered = false;
+
+    // Whisper shows on load (subtle)
+    setTimeout(() => centerWhisper.style.opacity = 1, 550);
+
+    function hideWhisper(){
+      centerWhisper.style.opacity = 0;
     }
 
-    const convo = [
-      { who: 'me',   text: `Hey you… 💗` },
-      { who: 'me',   text: `I’m sending this from my little painted universe.` },
-      { who: 'me',   text: `Put the music on if you want. No rush.` },
-      { who: 'me',   text: `Okay. Deep breath…` }
+    yesBtn.addEventListener("click", () => {
+      accepted = true;
+
+      // Reveal enter button
+      askRow.style.display = "none";
+      enterRow.style.display = "flex";
+      resetRow.style.display = "none";
+
+      // Remove the tint a little (still behind glass until Enter)
+      tintGlass.style.opacity = 0.65;
+
+      // Make it feel like a gentle "yes"
+      note.style.transform = "translateY(-2px)";
+      setTimeout(() => note.style.transform = "translateY(0px)", 240);
+    });
+
+    noBtn.addEventListener("click", () => {
+      accepted = false;
+
+      // Darken paper, show frown + reset
+      note.classList.add("nope");
+      askRow.style.display = "none";
+      enterRow.style.display = "none";
+      resetRow.style.display = "flex";
+      noLine.style.display = "block";
+    });
+
+    resetBtn.addEventListener("click", () => {
+      // Reset everything
+      accepted = false;
+      entered = false;
+
+      note.classList.remove("nope");
+      askRow.style.display = "flex";
+      enterRow.style.display = "none";
+      resetRow.style.display = "none";
+      noLine.style.display = "none";
+
+      tintGlass.style.opacity = 1;
+      document.getElementById("player").style.display = "none";
+
+      // Stop audio too
+      stopAudio();
+      setPlayerIdleTitle();
+    });
+
+    enterBtn.addEventListener("click", () => {
+      if (!accepted) return;
+      entered = true;
+
+      // Fade note away
+      note.style.opacity = 0;
+      note.style.transform = "translateY(10px)";
+      note.style.filter = "blur(2px)";
+
+      // Remove tint glass
+      tintGlass.style.opacity = 0;
+
+      // Whisper fades away
+      hideWhisper();
+
+      // Show player
+      document.getElementById("player").style.display = "block";
+
+      // Remove note from layout after animation
+      setTimeout(() => {
+        note.style.display = "none";
+      }, 650);
+    });
+
+    // ---------------------------
+    // PLAYLIST + PLAYER
+    // ---------------------------
+    const audio = document.getElementById("audio");
+    const seek = document.getElementById("seek");
+    const tNow = document.getElementById("tNow");
+    const tDur = document.getElementById("tDur");
+    const playBtn = document.getElementById("playBtn");
+    const playIcon = document.getElementById("playIcon");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const repeatBtn = document.getElementById("repeatBtn");
+    const trackText = document.getElementById("trackText");
+    const heartBtn = document.getElementById("heartBtn");
+
+    const playlist = [
+      { file: "everything.mp3", title: "Everything", artist: "Gotts Street Park (feat. Rosie Lowe)" },
+      { file: "IIHANDS.mp3", title: "II HANDS II HEAVEN", artist: "Beyoncé" },
+      { file: "POV.mp3", title: "pov", artist: "Ariana Grande" },
+      { file: "Sweet.mp3", title: "Sweet Love", artist: "Anita Baker" },
+      { file: "OurLove.mp3", title: "Our Love", artist: "Curtis Harding & Jazmine Sullivan" },
+      { file: "Floating.mp3", title: "Floating", artist: "Alina Baraz" },
+      { file: "All.mp3", title: "All In", artist: "Desiree Dawson" },
+      { file: "End.mp3", title: "End of the Night", artist: "Kenny G" },
+      { file: "Myone.mp3", title: "My One and Only Love", artist: "John Coltrane" },
+      { file: "Ribbon.mp3", title: "Ribbon in the Sky", artist: "Stevie Wonder" },
+      { file: "Nothing.mp3", title: "Nothing Even Matters", artist: "Lauryn Hill (feat. D'Angelo)" },
     ];
 
-    function openConversation(){
-      phoneBtn.classList.remove('isVibrating');
-      overlay.classList.add('open');
-      overlay.setAttribute('aria-hidden','false');
-      chatBody.innerHTML = '';
+    let idx = 0;
+    let isPlaying = false;
+    let shuffle = false;
+    let repeat = false;
+    let lastSeekUser = false;
 
-      // drip the convo in
-      let i = 0;
-      const tick = () => {
-        if (i < convo.length){
-          appendBubble(convo[i].who, convo[i].text);
-          i++;
-          setTimeout(tick, 650);
-        }else{
-          setTimeout(() => appendAsk(), 650);
-        }
-      };
-      tick();
+    function fmtTime(s){
+      if (!isFinite(s) || s < 0) return "0:00";
+      const m = Math.floor(s / 60);
+      const r = Math.floor(s % 60);
+      return `${m}:${String(r).padStart(2,"0")}`;
     }
 
-    function closeConversation(){
-      overlay.classList.remove('open');
-      overlay.setAttribute('aria-hidden','true');
-      // start vibrating again after a beat (so it keeps calling them back)
-      setTimeout(() => phoneBtn.classList.add('isVibrating'), 500);
+    function setMarquee(text){
+      trackText.textContent = text;
+
+      // Toggle marquee only if text is longer than container width
+      // quick heuristic: length > 26
+      trackText.classList.remove("run");
+      if (text.length > 26){
+        // Duplicate text for smoother scroll illusion
+        trackText.textContent = text + "   •   " + text;
+        trackText.classList.add("run");
+      }
     }
 
-    phoneBtn.addEventListener('click', openConversation);
-    phoneBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') openConversation();
+    function setPlayerIdleTitle(){
+      setMarquee("To My Everything 💗");
+    }
+
+    function setTrack(i){
+      idx = (i + playlist.length) % playlist.length;
+      const tr = playlist[idx];
+      audio.src = tr.file;
+
+      setMarquee(`${tr.title} — ${tr.artist}`);
+      // reset progress UI until metadata loads
+      seek.value = 0;
+      tNow.textContent = "0:00";
+      tDur.textContent = "0:00";
+    }
+
+    function playAudio(){
+      if (!audio.src) setTrack(idx);
+
+      audio.play().then(() => {
+        isPlaying = true;
+        playIcon.textContent = "⏸";
+      }).catch(() => {
+        // Autoplay may be blocked; user will click again.
+        isPlaying = false;
+        playIcon.textContent = "▶";
+      });
+    }
+
+    function pauseAudio(){
+      audio.pause();
+      isPlaying = false;
+      playIcon.textContent = "▶";
+    }
+
+    function stopAudio(){
+      pauseAudio();
+      audio.currentTime = 0;
+      seek.value = 0;
+      tNow.textContent = "0:00";
+    }
+
+    function nextTrack(){
+      if (shuffle){
+        idx = Math.floor(Math.random() * playlist.length);
+      } else {
+        idx = (idx + 1) % playlist.length;
+      }
+      setTrack(idx);
+      playAudio();
+    }
+
+    function prevTrack(){
+      // if not far into track, go prev; else restart
+      if (audio.currentTime > 2.5){
+        audio.currentTime = 0;
+        return;
+      }
+      idx = (idx - 1 + playlist.length) % playlist.length;
+      setTrack(idx);
+      playAudio();
+    }
+
+    playBtn.addEventListener("click", () => {
+      if (!audio.src){
+        setTrack(idx);
+      }
+      if (isPlaying) pauseAudio();
+      else playAudio();
     });
 
-    closeChat.addEventListener('click', closeConversation);
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeConversation();
+    nextBtn.addEventListener("click", nextTrack);
+    prevBtn.addEventListener("click", prevTrack);
+
+    shuffleBtn.addEventListener("click", () => {
+      shuffle = !shuffle;
+      shuffleBtn.classList.toggle("on", shuffle);
     });
 
-    // ===== Quick sanity tip in console (optional) =====
-    // If music doesn't play on GitHub Pages, confirm:
-    // 1) mp3 file name is EXACTLY "music.mp3"
-    // 2) it sits next to index.html
-    // 3) the file path is correct (same folder)
-    console.log("If audio fails: ensure your MP3 is named music.mp3 and is in the same folder as index.html.");
+    repeatBtn.addEventListener("click", () => {
+      repeat = !repeat;
+      repeatBtn.classList.toggle("on", repeat);
+      audio.loop = repeat; // simple repeat-one behavior
+    });
+
+    heartBtn.addEventListener("click", () => {
+      // purely cute UI toggle
+      const on = heartBtn.textContent !== "♡";
+      heartBtn.textContent = on ? "♡" : "♥";
+    });
+
+    // Sync progress
+    audio.addEventListener("loadedmetadata", () => {
+      tDur.textContent = fmtTime(audio.duration);
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if (!isFinite(audio.duration) || audio.duration === 0) return;
+      tNow.textContent = fmtTime(audio.currentTime);
+
+      if (!lastSeekUser){
+        const v = Math.floor((audio.currentTime / audio.duration) * 1000);
+        seek.value = String(v);
+      }
+    });
+
+    // Seek interactions
+    seek.addEventListener("pointerdown", () => { lastSeekUser = true; });
+    seek.addEventListener("pointerup", () => {
+      lastSeekUser = false;
+      if (!isFinite(audio.duration) || audio.duration === 0) return;
+      const pct = Number(seek.value) / 1000;
+      audio.currentTime = pct * audio.duration;
+    });
+
+    seek.addEventListener("input", () => {
+      // live preview time while dragging
+      if (!isFinite(audio.duration) || audio.duration === 0) return;
+      const pct = Number(seek.value) / 1000;
+      const preview = pct * audio.duration;
+      tNow.textContent = fmtTime(preview);
+    });
+
+    audio.addEventListener("ended", () => {
+      if (repeat) return; // loop handles it
+      nextTrack();
+    });
+
+    // Initialize player idle
+    setPlayerIdleTitle();
+    // preload first track metadata once entered (optional)
+    // setTrack(idx); // uncomment if you want it ready immediately
+
   </script>
 </body>
 </html>
