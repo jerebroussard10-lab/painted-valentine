@@ -1,383 +1,452 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Painted Valentine</title>
-
   <style>
     :root{
-      --cream: #f7f1e6;
-      --ink: #1a1a1a;
-      --shadow: 0 20px 60px rgba(0,0,0,.28);
-      --shadowSoft: 0 14px 38px rgba(0,0,0,.18);
-      --pink: #ff6fb3; /* lighter pink */
-      --glass: rgba(255,255,255,.10);
-      --glass2: rgba(255,255,255,.18);
-      --stroke: rgba(255,255,255,.25);
-      --ui: rgba(18,18,18,.55);
+      --cream:#f7f1e6;
+      --ink:#1b1b1b;
+      --glass: rgba(20, 20, 20, 0.28);
+      --glass-2: rgba(20, 20, 20, 0.40);
+      --stroke: rgba(255,255,255,0.18);
+      --pink:#ff7db6;
     }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #0b0b0b;
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; }
+    body{
+      overflow:hidden;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: white;
+      color:white;
+      background:#000;
     }
 
-    /* BACKGROUND STACK */
-    .stage {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
+    /* ---------- Scene layers ---------- */
+    .scene{
+      position:fixed;
+      inset:0;
     }
 
-    .bg {
-      position: absolute;
-      inset: -6%;
-      background-size: cover;
-      background-position: center;
-      transform: scale(1.04);
-      filter: saturate(1.05) contrast(1.05);
-      transition: opacity 800ms ease, filter 800ms ease;
-      opacity: 1;
-    }
-
-    /* Cloud layer (transparent PNG) */
-    .clouds {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: .30;
-      mix-blend-mode: screen;
-    }
-    .cloud {
-      position: absolute;
-      top: 8%;
-      left: -40%;
-      width: min(1100px, 140vw);
-      height: auto;
-      filter: blur(0.4px);
-      opacity: .85;
-      animation: cloudDrift 70s ease-in-out infinite alternate;
-    }
-    .cloud.two {
-      top: 16%;
-      left: -55%;
-      width: min(900px, 120vw);
-      opacity: .55;
-      animation-duration: 92s;
-      animation-delay: -14s;
-    }
-
-    /* This is the “tinted glass” over the painting BEFORE YES */
-    .tintGlass {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 900ms ease;
-      background:
-        radial-gradient(1200px 900px at 50% 40%, rgba(255,255,255,.10), rgba(0,0,0,.35)),
-        linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.35));
-      backdrop-filter: blur(3px);
-    }
-
-    /* Slight “museum glass” specular sweep */
-    .tintGlass::after{
-      content:"";
+    .bg{
       position:absolute;
-      inset:-40%;
-      background: linear-gradient(110deg,
-        transparent 0%,
-        rgba(255,255,255,.05) 35%,
-        rgba(255,255,255,.12) 46%,
-        rgba(255,255,255,.04) 58%,
-        transparent 70%);
-      transform: translateX(-25%) rotate(1deg);
-      animation: sweep 14s ease-in-out infinite;
-      opacity: .9;
+      inset:0;
+      background:url("Midnight.png") center/cover no-repeat;
+      transform: scale(1.02);
+      filter: saturate(1.02) contrast(1.05);
     }
 
-    @keyframes sweep {
-      0%   { transform: translateX(-25%) rotate(1deg); opacity:.65; }
-      50%  { transform: translateX(12%) rotate(1deg);  opacity:.85; }
-      100% { transform: translateX(-25%) rotate(1deg); opacity:.65; }
+    /* Tint glass (stronger before entering) */
+    .glassTint{
+      position:absolute;
+      inset:0;
+      background: rgba(10, 15, 25, 0.55);
+      backdrop-filter: blur(10px);
+      transition: opacity 900ms ease, backdrop-filter 900ms ease;
+      opacity: 1;
+      pointer-events:none;
+    }
+    .entered .glassTint{
+      opacity: 0;
+      backdrop-filter: blur(0px);
     }
 
-    @keyframes cloudDrift {
-      0%   { transform: translateX(0px) translateY(0px); }
-      100% { transform: translateX(520px) translateY(14px); }
+    /* Soft paint texture overlay (cheap + effective) */
+    .paintTexture{
+      position:absolute;
+      inset:-10%;
+      pointer-events:none;
+      opacity:0.16;
+      mix-blend-mode: overlay;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.12), transparent 45%),
+        radial-gradient(circle at 70% 35%, rgba(255,255,255,0.10), transparent 50%),
+        radial-gradient(circle at 45% 80%, rgba(255,255,255,0.08), transparent 55%),
+        repeating-linear-gradient(25deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 2px, transparent 2px, transparent 10px);
+      filter: blur(0.3px);
+      transform: rotate(-2deg);
+      transition: opacity 800ms ease;
     }
+    .entered .paintTexture{ opacity:0.22; } /* slightly richer once inside */
 
-    /* FOREGROUND UI LAYER */
-    .ui {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      padding: 24px;
+    /* Stars layer */
+    .stars{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity:0;                 /* hidden until enter */
+      transition: opacity 700ms ease;
     }
+    .entered .stars{ opacity:1; }
 
-    /* NOTE CARD */
-    .noteWrap{
-      width: min(720px, 92vw);
-      position: relative;
-      z-index: 5;
-    }
-
-    .note {
-      background: var(--cream);
-      color: #231f1a;
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      padding: 34px 34px 26px;
-      position: relative;
-      overflow: hidden;
-      transition: transform 600ms ease, filter 600ms ease, opacity 600ms ease;
-    }
-
-    /* Paper texture */
-    .note::before{
+    /* Twinkle dots via pseudo elements container */
+    .stars::before{
       content:"";
       position:absolute;
       inset:0;
       background:
-        radial-gradient(900px 600px at 20% 20%, rgba(255,255,255,.55), transparent 60%),
-        radial-gradient(900px 700px at 90% 40%, rgba(0,0,0,.05), transparent 60%),
-        repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0, rgba(0,0,0,.015) 1px, transparent 2px, transparent 6px);
-      opacity: .55;
+        radial-gradient(circle, rgba(255,255,255,0.9) 0 1px, transparent 2px) 10% 20%/180px 160px,
+        radial-gradient(circle, rgba(255,255,255,0.8) 0 1px, transparent 2px) 65% 30%/220px 190px,
+        radial-gradient(circle, rgba(255,255,255,0.7) 0 1px, transparent 2px) 30% 65%/200px 180px,
+        radial-gradient(circle, rgba(255,255,255,0.6) 0 1px, transparent 2px) 85% 75%/240px 210px,
+        radial-gradient(circle, rgba(255,255,255,0.65) 0 1px, transparent 2px) 50% 10%/260px 240px;
+      opacity:0.55;
+      filter: blur(0.2px);
+      animation: twinkle 4.6s ease-in-out infinite;
+    }
+    .stars::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.85) 0 1px, transparent 2px) 20% 35%/260px 240px,
+        radial-gradient(circle, rgba(255,255,255,0.75) 0 1px, transparent 2px) 75% 15%/300px 260px,
+        radial-gradient(circle, rgba(255,255,255,0.65) 0 1px, transparent 2px) 55% 70%/280px 240px;
+      opacity:0.45;
+      filter: blur(0.3px);
+      animation: twinkle 6.2s ease-in-out infinite reverse;
+    }
+
+    @keyframes twinkle{
+      0%,100%{ opacity:0.35; transform: translateY(0px); }
+      50%{ opacity:0.62; transform: translateY(-2px); }
+    }
+
+    /* Clouds layer */
+    .clouds{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity:0;                 /* hidden until enter */
+      transition: opacity 700ms ease;
+    }
+    .entered .clouds{ opacity:1; }
+
+    .cloud{
+      position:absolute;
+      top:10%;
+      left:-60%;
+      width:min(520px, 70vw);
+      height:auto;
+      opacity:0;
+      filter: blur(0.2px) brightness(0.95);
+      will-change: transform, opacity;
+      animation: cloudDrift linear infinite;
+    }
+
+    /* One-way across + fade in/out so no “jerk” */
+    @keyframes cloudDrift{
+      0%   { transform: translateX(-10vw); opacity:0; }
+      8%   { opacity:0.45; }
+      85%  { opacity:0.45; }
+      100% { transform: translateX(140vw); opacity:0; }
+    }
+
+    /* Fireflies canvas */
+    #fireflies{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      opacity:0;                 /* hidden until enter */
+      transition: opacity 700ms ease;
+    }
+    .entered #fireflies{ opacity:1; }
+
+    /* ---------- Intro text line ---------- */
+    .introLine{
+      position:absolute;
+      top:7%;
+      left:0; right:0;
+      text-align:center;
+      font-style: italic;
+      font-size: clamp(16px, 2.0vw, 22px);
+      color: rgba(255,255,255,0.9);
+      text-shadow: 0 8px 24px rgba(0,0,0,0.55);
+      opacity: 1;
+      transition: opacity 1400ms ease;
       pointer-events:none;
     }
+    .entered .introLine{ opacity:0; }
 
-    .noteInner{
-      position: relative;
-      z-index: 1;
-      line-height: 1.45;
-      font-size: clamp(16px, 2.1vw, 19px);
-    }
-
-    .note h1{
-      margin: 0 0 14px;
-      font-weight: 700;
-      font-size: clamp(18px, 2.4vw, 22px);
-      letter-spacing: .2px;
-    }
-
-    .note p{ margin: 10px 0; }
-
-    .sig{
-      margin-top: 16px;
-      font-weight: 650;
-    }
-    .sig small{
-      display:block;
-      font-weight: 600;
-      opacity: .72;
-      margin-top: 2px;
-    }
-
-    /* Center italic line that fades away */
-    .centerWhisper {
-      position: fixed;
-      left: 50%;
-      top: 18%;
-      transform: translateX(-50%);
-      z-index: 6;
-      font-style: italic;
-      letter-spacing: .2px;
-      color: rgba(255,255,255,.92);
-      text-shadow: 0 12px 36px rgba(0,0,0,.35);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 900ms ease;
-      text-align:center;
-      padding: 0 14px;
-      width: min(820px, 92vw);
-      font-size: clamp(16px, 2.3vw, 22px);
-    }
-
-    /* Buttons */
-    .row {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-top: 18px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      appearance: none;
-      border: none;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 26px rgba(0,0,0,.18);
-      transition: transform 120ms ease, filter 120ms ease;
-      user-select: none;
-    }
-    .btn:active{ transform: translateY(1px) scale(.99); }
-
-    .btnYes{
-      background: #1f1f1f;
-      color: #fff;
-    }
-    .btnNo{
-      background: rgba(255,255,255,.8);
-      color: #111;
-      border: 1px solid rgba(0,0,0,.08);
-    }
-    .btnEnter{
-      background: var(--pink);
-      color: #1b0b12;
-    }
-    .btnReset{
-      background: rgba(255,255,255,.9);
-      color: #111;
-      border: 1px solid rgba(0,0,0,.08);
-      padding: 10px 14px;
-    }
-
-    /* "No" state (paper turns dark) */
-    .note.nope{
-      background: #0d0d0f;
-      color: rgba(255,255,255,.92);
-      filter: saturate(.9);
-    }
-    .note.nope::before{
-      opacity: .25;
-      filter: contrast(1.2);
-    }
-    .noLine{
-      margin-top: 12px;
-      font-weight: 800;
-    }
-
-    /* PLAYER */
-    .player {
-      position: fixed;
-      left: 18px;
-      bottom: 18px;
-      width: min(420px, 92vw);
-      z-index: 8;
-      background: rgba(10,10,10,.42);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 18px;
-      box-shadow: var(--shadowSoft);
-      backdrop-filter: blur(10px);
-      padding: 14px 14px 12px;
-      display: none; /* hidden until they enter */
-    }
-
-    .playerTop{
+    /* ---------- Letter card ---------- */
+    .centerWrap{
+      position:absolute;
+      inset:0;
       display:flex;
       align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 8px;
+      justify-content:center;
+      padding: 18px;
     }
 
-    .trackTitle{
-      font-weight: 800;
-      letter-spacing: .2px;
-      font-size: 15px;
-      line-height: 1.1;
-      color: rgba(255,255,255,.92);
-      overflow: hidden;
-      white-space: nowrap;
-      width: 100%;
+    .card{
+      width: min(900px, 92vw);
+      border-radius: 18px;
+      background: rgba(247, 241, 230, 0.96);
+      color: var(--ink);
+      box-shadow: 0 26px 70px rgba(0,0,0,0.45);
+      padding: clamp(18px, 2.2vw, 28px);
       position: relative;
+      overflow:hidden;
+      transition: transform 600ms ease, opacity 600ms ease, background 600ms ease, color 600ms ease;
     }
 
-    /* Marquee effect container */
-    .marquee{
+    /* subtle paper grain */
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(0,0,0,0.04), transparent 40%),
+        radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 45%),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.015), rgba(0,0,0,0.015) 1px, transparent 1px, transparent 7px);
+      opacity:0.35;
+      pointer-events:none;
+      mix-blend-mode: multiply;
+    }
+
+    .cardInner{
+      position:relative;
+      z-index:1;
+      display:grid;
+      gap: 10px;
+    }
+
+    .hello{
+      font-weight:700;
+      font-size: 20px;
+      margin-bottom: 2px;
+    }
+
+    .p{
+      line-height:1.55;
+      font-size: 17px;
+      margin:0;
+    }
+
+    .sigRow{
+      margin-top: 8px;
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      font-weight:600;
+    }
+    .sigSmall{
+      font-weight:700;
+      opacity:0.75;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+    }
+
+    .askRow{
+      margin-top: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      flex-wrap:wrap;
+    }
+    .askText{
+      font-weight:800;
+      font-size: 20px;
+    }
+
+    .btnRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .btn{
+      border:0;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform 120ms ease, opacity 200ms ease, background 200ms ease, color 200ms ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+      user-select:none;
+    }
+    .btn:active{ transform: scale(0.98); }
+
+    .btnYes{
+      background: #161616;
+      color: white;
+    }
+    .btnNo{
+      background: #ffffff;
+      color: #111;
+      border: 1px solid rgba(0,0,0,0.12);
+    }
+
+    /* Enter button appears after YES */
+    .enterRow{
+      display:none;
+      margin-top: 12px;
+      justify-content:flex-end;
+    }
+    .enterBtn{
+      background: #161616;
+      color: white;
+      padding: 11px 18px;
+    }
+
+    /* NO state */
+    .card.nope{
+      background: rgba(14,14,14,0.88);
+      color: rgba(255,255,255,0.92);
+    }
+    .noEmoji{
+      display:none;
+      width:100%;
+      text-align:center;
+      font-size: 38px;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+    .card.nope .noEmoji{
+      display:block;
+    }
+    .resetRow{
+      display:none;
+      margin-top: 10px;
+      justify-content:flex-start;
+    }
+    .resetBtn{
+      background: rgba(255,255,255,0.92);
+      color:#111;
+      border:0;
+    }
+
+    /* Hide ask buttons when answered */
+    .hidden{ display:none !important; }
+
+    /* ---------- Player ---------- */
+    .playerWrap{
+      position:absolute;
+      left:50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: min(760px, calc(100vw - 28px));
+      pointer-events:none; /* enable only on player itself */
+      opacity:0;
+      transition: opacity 700ms ease, transform 700ms ease;
+    }
+    .entered .playerWrap{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0px);
+    }
+
+    .player{
+      pointer-events:auto;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(20,20,20,0.35), rgba(20,20,20,0.22));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.45);
+      overflow:hidden;
+    }
+
+    .playerHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 12px 14px 6px 14px;
+    }
+
+    .titleWrap{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+    }
+    .title{
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .titleScroll{
       display:inline-block;
-      padding-left: 0;
+      padding-right: 28px;
+      animation: marquee 10s linear infinite;
       will-change: transform;
     }
-    .marquee.run{
-      animation: marquee 12s linear infinite;
-    }
+    .marqueeOff .titleScroll{ animation:none; }
+
     @keyframes marquee{
       0%{ transform: translateX(0%); }
-      100%{ transform: translateX(-55%); }
+      100%{ transform: translateX(-35%); }
     }
 
-    .modes {
+    .miniBtns{
       display:flex;
       gap: 8px;
       align-items:center;
     }
 
-    .chip{
+    .iconBtn{
       width: 34px;
       height: 34px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.08);
-      color: rgba(255,255,255,.9);
-      cursor: pointer;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.92);
       display:grid;
       place-items:center;
+      cursor:pointer;
       user-select:none;
-      transition: transform 120ms ease, background 120ms ease;
-      font-size: 14px;
     }
-    .chip:active{ transform: scale(.98); }
-    .chip.on{
-      background: rgba(255,255,255,.18);
-      border-color: rgba(255,255,255,.24);
+    .iconBtn.on{
+      border-color: rgba(255,125,182,0.45);
+      box-shadow: 0 0 0 2px rgba(255,125,182,0.14) inset;
     }
 
-    .progressRow{
-      display:flex;
-      align-items:center;
+    .playerBody{
+      padding: 6px 14px 14px 14px;
+      display:grid;
       gap: 10px;
-      margin: 8px 0 10px;
     }
 
-    .time{
-      font-variant-numeric: tabular-nums;
+    .timeRow{
+      display:flex;
+      justify-content:space-between;
       font-size: 12px;
-      opacity: .85;
-      min-width: 42px;
-      text-align: center;
+      opacity:0.85;
     }
 
-    input[type="range"]{
-      -webkit-appearance:none;
-      appearance:none;
+    .progress{
       width:100%;
+      appearance:none;
       height: 6px;
       border-radius: 999px;
-      background: rgba(255,255,255,.16);
+      background: rgba(255,255,255,0.18);
       outline:none;
       cursor:pointer;
     }
-    input[type="range"]::-webkit-slider-thumb{
-      -webkit-appearance:none;
+    .progress::-webkit-slider-thumb{
       appearance:none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: rgba(255,255,255,.92);
-      border: 1px solid rgba(0,0,0,.15);
+      width: 14px;
+      height: 14px;
+      border-radius:50%;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(0,0,0,0.25);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
     }
 
     .controls{
       display:flex;
+      justify-content:space-between;
       align-items:center;
-      justify-content: space-between;
       gap: 10px;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
-    .mainControls{
+    .ctrlLeft, .ctrlRight{
       display:flex;
-      gap: 10px;
+      gap:10px;
       align-items:center;
     }
 
@@ -385,338 +454,137 @@
       width: 46px;
       height: 46px;
       border-radius: 999px;
-      background: rgba(255,255,255,.92);
-      border: none;
-      cursor: pointer;
-      display:grid;
-      place-items:center;
-      box-shadow: 0 10px 18px rgba(0,0,0,.22);
-    }
-
-    .bigPlay span{
-      color:#101010;
-      font-size: 18px;
-      transform: translateX(1px);
-    }
-
-    .tinyBtn{
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.08);
-      color: rgba(255,255,255,.9);
+      background: rgba(255,255,255,0.92);
+      color:#111;
+      border:0;
       cursor:pointer;
+      font-weight:900;
       display:grid;
       place-items:center;
-      user-select:none;
-      font-size: 14px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.35);
     }
 
-    /* Manual BG toggle (testing) */
-    #bgToggle {
-      position: fixed;
-      bottom: 16px;
-      right: 16px;
-      display: flex;
-      gap: 6px;
-      opacity: 0.20;
-      z-index: 20;
-      transition: opacity 160ms ease;
-      user-select:none;
-    }
-    #bgToggle:hover { opacity: 0.9; }
-    #bgToggle button {
-      background: rgba(255,255,255,0.55);
-      border: none;
-      border-radius: 999px;
-      width: 34px;
-      height: 34px;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 10px 22px rgba(0,0,0,.16);
-    }
-
-    /* Small hint (optional) */
-    .tinyHint{
-      position: fixed;
-      right: 18px;
-      top: 14px;
+    /* Collapse */
+    .collapsed .playerBody{ display:none; }
+    .collapseHint{
       font-size: 12px;
-      opacity: .65;
-      z-index: 20;
-      background: rgba(0,0,0,.30);
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      backdrop-filter: blur(10px);
-      display:none; /* keep hidden */
+      opacity:0.65;
+      margin-top:-2px;
     }
 
-    @media (max-width: 520px){
-      .note{ padding: 26px 22px 20px; }
-      .player{ left: 12px; right: 12px; width: auto; }
-      #bgToggle{ right: 12px; bottom: 12px; }
+    /* Mobile tweaks */
+    @media (max-width:520px){
+      .askText{ font-size:18px; }
+      .p{ font-size:16px; }
+      .playerHeader{ padding: 11px 12px 6px 12px; }
+      .playerBody{ padding: 6px 12px 12px 12px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="stage">
-    <div class="bg background"></div>
+  <div class="scene" id="scene">
+    <div class="bg"></div>
+    <div class="glassTint" id="glassTint"></div>
+    <div class="stars"></div>
 
-    <div class="clouds" aria-hidden="true">
-      <img class="cloud one" src="cloud.png" alt="">
-      <img class="cloud two" src="cloud.png" alt="">
+    <!-- Clouds (multiple) -->
+    <div class="clouds" id="clouds">
+      <!-- We spawn these in JS so we can stagger nicely -->
     </div>
 
-    <div class="tintGlass" id="tintGlass"></div>
-  </div>
+    <!-- Fireflies -->
+    <canvas id="fireflies"></canvas>
 
-  <div class="centerWhisper" id="centerWhisper">
-    <span>I wanted to give you something you could stay in.</span>
-  </div>
+    <div class="paintTexture"></div>
 
-  <div class="ui">
-    <div class="noteWrap">
-      <div class="note" id="note">
-        <div class="noteInner" id="noteInner">
-          <h1>Hello my love,</h1>
+    <div class="introLine" id="introLine">I wanted to give you something you could stay in.</div>
 
-          <p>I can’t believe we are already having our first Valentine’s Day.</p>
-          <p>In a way you have been helping turn my life into a work of art.</p>
-          <p>So this is my little ode to you, me, and us.</p>
-          <p>Thank you for being my <b>Muse</b>!</p>
+    <div class="centerWrap" id="centerWrap">
+      <div class="card" id="card">
+        <div class="cardInner" id="cardInner">
+          <div class="hello">Hello my love,</div>
 
-          <div class="sig">
-            – Love Sweets 🍭
-            <small>V.D 2026</small>
+          <p class="p">I can’t believe we are already having our first Valentine’s Day.</p>
+          <p class="p">In a way you have been helping turn my life into a work of art.</p>
+          <p class="p">So this is my little ode to you, me, and us.</p>
+          <p class="p">Thank you for being my <b>Muse!</b></p>
+
+          <div class="sigRow">
+            <div>– Love Sweets 🍭</div>
+            <div class="sigSmall">V.D 2026</div>
           </div>
 
-          <div class="row" id="askRow">
-            <div style="flex:1; min-width: 220px; font-weight:800;">
-              Will you be my Valentine? 💖
+          <div class="askRow" id="askRow">
+            <div class="askText">Will you be my Valentine? 💗</div>
+            <div class="btnRow" id="btnRow">
+              <button class="btn btnYes" id="yesBtn">Yes</button>
+              <button class="btn btnNo" id="noBtn">No</button>
             </div>
-            <button class="btn btnYes" id="yesBtn">Yes</button>
-            <button class="btn btnNo" id="noBtn">No</button>
           </div>
 
-          <div class="row" id="enterRow" style="display:none;">
-            <button class="btn btnEnter" id="enterBtn">Enter the painting ✨</button>
+          <div class="enterRow" id="enterRow">
+            <button class="btn enterBtn" id="enterBtn">Enter the painting</button>
           </div>
 
-          <div class="row" id="resetRow" style="display:none;">
-            <button class="btn btnReset" id="resetBtn">Reset</button>
-          </div>
-
-          <div class="noLine" id="noLine" style="display:none;">
-            ☹️
+          <div class="noEmoji" id="noEmoji">☹️</div>
+          <div class="resetRow" id="resetRow">
+            <button class="btn resetBtn" id="resetBtn">Reset</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- PLAYER (hidden until Enter) -->
-  <div class="player" id="player">
-    <div class="playerTop">
-      <div class="trackTitle" title="">
-        <span class="marquee" id="trackText">To My Everything 💗</span>
-      </div>
-      <div class="modes">
-        <button class="chip" id="shuffleBtn" title="Shuffle">🔀</button>
-        <button class="chip" id="repeatBtn" title="Repeat">🔁</button>
+    <!-- Player (hidden until entered) -->
+    <div class="playerWrap" id="playerWrap" style="opacity:0;">
+      <div class="player" id="player">
+        <div class="playerHeader">
+          <div class="titleWrap" id="titleWrap">
+            <div class="title marqueeOff" id="titleLine">
+              <span class="titleScroll" id="titleScroll">To My Everything 💗</span>
+            </div>
+            <div class="collapseHint" id="subtitleHint">romantic playlist</div>
+          </div>
+
+          <div class="miniBtns">
+            <div class="iconBtn" id="shuffleBtn" title="Shuffle">🔀</div>
+            <div class="iconBtn" id="repeatBtn" title="Repeat">🔁</div>
+            <div class="iconBtn" id="collapseBtn" title="Collapse / Expand">▾</div>
+          </div>
+        </div>
+
+        <div class="playerBody" id="playerBody">
+          <input class="progress" id="progress" type="range" min="0" max="100" value="0" />
+          <div class="timeRow">
+            <div id="curTime">0:00</div>
+            <div id="durTime">0:00</div>
+          </div>
+
+          <div class="controls">
+            <div class="ctrlLeft">
+              <button class="iconBtn" id="prevBtn" title="Previous">⏮</button>
+              <button class="bigPlay" id="playBtn" title="Play / Pause">▶</button>
+              <button class="iconBtn" id="nextBtn" title="Next">⏭</button>
+            </div>
+            <div class="ctrlRight">
+              <div class="iconBtn" id="likeBtn" title="Like">♡</div>
+            </div>
+          </div>
+        </div>
+
+        <audio id="audio" preload="metadata"></audio>
       </div>
     </div>
-
-    <div class="progressRow">
-      <div class="time" id="tNow">0:00</div>
-      <input type="range" id="seek" min="0" max="1000" value="0" />
-      <div class="time" id="tDur">0:00</div>
-    </div>
-
-    <div class="controls">
-      <div class="mainControls">
-        <button class="tinyBtn" id="prevBtn" title="Prev">⏮</button>
-        <button class="bigPlay" id="playBtn" title="Play/Pause"><span id="playIcon">▶</span></button>
-        <button class="tinyBtn" id="nextBtn" title="Next">⏭</button>
-      </div>
-
-      <button class="tinyBtn" id="heartBtn" title="Love">♡</button>
-    </div>
   </div>
-
-  <!-- Manual BG toggle (testing) -->
-  <div id="bgToggle" title="Manual background toggle (testing)">
-    <button data-bg="sunrise">☀️</button>
-    <button data-bg="sunset">🌅</button>
-    <button data-bg="midnight">🌙</button>
-  </div>
-
-  <audio id="audio" preload="metadata"></audio>
 
   <script>
-    // ---------------------------
-    // BACKGROUNDS (auto + manual)
-    // ---------------------------
-    const bgEl = document.querySelector(".background");
-    const tintGlass = document.getElementById("tintGlass");
-
-    const backgrounds = {
-      sunrise: "Sunrise.png",
-      sunset: "Sunset.png",
-      midnight: "Midnight.png",
-    };
-
-    function getAutoBgKey(){
-      const h = new Date().getHours();
-      // Adjust if you want different cutoffs
-      if (h >= 6 && h < 16) return "sunrise";   // morning/day
-      if (h >= 16 && h < 20) return "sunset";   // golden/evening
-      return "midnight";                        // night
-    }
-
-    function setBackground(key){
-      const url = backgrounds[key] || backgrounds.sunrise;
-      bgEl.style.opacity = 0;
-
-      setTimeout(() => {
-        bgEl.style.backgroundImage = `url('${url}')`;
-        bgEl.style.opacity = 1;
-      }, 450);
-    }
-
-    // Init background
-    setBackground(getAutoBgKey());
-
-    // Re-check hourly in auto mode (simple)
-    setInterval(() => {
-      if (!manualBgMode) setBackground(getAutoBgKey());
-    }, 60 * 60 * 1000);
-
-    // Manual toggle (testing)
-    let manualBgMode = false;
-    document.querySelectorAll("#bgToggle button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        manualBgMode = true;
-        setBackground(btn.dataset.bg);
-      });
-    });
-
-    // ---------------------------
-    // DAY 2: NOTE FLOW
-    // ---------------------------
-    const note = document.getElementById("note");
-    const yesBtn = document.getElementById("yesBtn");
-    const noBtn = document.getElementById("noBtn");
-    const askRow = document.getElementById("askRow");
-    const enterRow = document.getElementById("enterRow");
-    const enterBtn = document.getElementById("enterBtn");
-    const resetRow = document.getElementById("resetRow");
-    const resetBtn = document.getElementById("resetBtn");
-    const noLine = document.getElementById("noLine");
-    const centerWhisper = document.getElementById("centerWhisper");
-
-    let accepted = false;
-    let entered = false;
-
-    // Whisper shows on load (subtle)
-    setTimeout(() => centerWhisper.style.opacity = 1, 550);
-
-    function hideWhisper(){
-      centerWhisper.style.opacity = 0;
-    }
-
-    yesBtn.addEventListener("click", () => {
-      accepted = true;
-
-      // Reveal enter button
-      askRow.style.display = "none";
-      enterRow.style.display = "flex";
-      resetRow.style.display = "none";
-
-      // Remove the tint a little (still behind glass until Enter)
-      tintGlass.style.opacity = 0.65;
-
-      // Make it feel like a gentle "yes"
-      note.style.transform = "translateY(-2px)";
-      setTimeout(() => note.style.transform = "translateY(0px)", 240);
-    });
-
-    noBtn.addEventListener("click", () => {
-      accepted = false;
-
-      // Darken paper, show frown + reset
-      note.classList.add("nope");
-      askRow.style.display = "none";
-      enterRow.style.display = "none";
-      resetRow.style.display = "flex";
-      noLine.style.display = "block";
-    });
-
-    resetBtn.addEventListener("click", () => {
-      // Reset everything
-      accepted = false;
-      entered = false;
-
-      note.classList.remove("nope");
-      askRow.style.display = "flex";
-      enterRow.style.display = "none";
-      resetRow.style.display = "none";
-      noLine.style.display = "none";
-
-      tintGlass.style.opacity = 1;
-      document.getElementById("player").style.display = "none";
-
-      // Stop audio too
-      stopAudio();
-      setPlayerIdleTitle();
-    });
-
-    enterBtn.addEventListener("click", () => {
-      if (!accepted) return;
-      entered = true;
-
-      // Fade note away
-      note.style.opacity = 0;
-      note.style.transform = "translateY(10px)";
-      note.style.filter = "blur(2px)";
-
-      // Remove tint glass
-      tintGlass.style.opacity = 0;
-
-      // Whisper fades away
-      hideWhisper();
-
-      // Show player
-      document.getElementById("player").style.display = "block";
-
-      // Remove note from layout after animation
-      setTimeout(() => {
-        note.style.display = "none";
-      }, 650);
-    });
-
-    // ---------------------------
-    // PLAYLIST + PLAYER
-    // ---------------------------
-    const audio = document.getElementById("audio");
-    const seek = document.getElementById("seek");
-    const tNow = document.getElementById("tNow");
-    const tDur = document.getElementById("tDur");
-    const playBtn = document.getElementById("playBtn");
-    const playIcon = document.getElementById("playIcon");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const shuffleBtn = document.getElementById("shuffleBtn");
-    const repeatBtn = document.getElementById("repeatBtn");
-    const trackText = document.getElementById("trackText");
-    const heartBtn = document.getElementById("heartBtn");
-
+    // -----------------------
+    // Playlist (your filenames)
+    // -----------------------
     const playlist = [
-      { file: "everything.mp3", title: "Everything", artist: "Gotts Street Park (feat. Rosie Lowe)" },
-      { file: "IIHANDS.mp3", title: "II HANDS II HEAVEN", artist: "Beyoncé" },
+      { file: "everything.mp3", title: "Everything", artist: "Gotts Street Park feat. Rosie Lowe" },
       { file: "POV.mp3", title: "pov", artist: "Ariana Grande" },
+      { file: "IIHANDS.mp3", title: "II HANDS II HEAVEN", artist: "Beyoncé" },
       { file: "Sweet.mp3", title: "Sweet Love", artist: "Anita Baker" },
       { file: "OurLove.mp3", title: "Our Love", artist: "Curtis Harding & Jazmine Sullivan" },
       { file: "Floating.mp3", title: "Floating", artist: "Alina Baraz" },
@@ -724,168 +592,388 @@
       { file: "End.mp3", title: "End of the Night", artist: "Kenny G" },
       { file: "Myone.mp3", title: "My One and Only Love", artist: "John Coltrane" },
       { file: "Ribbon.mp3", title: "Ribbon in the Sky", artist: "Stevie Wonder" },
-      { file: "Nothing.mp3", title: "Nothing Even Matters", artist: "Lauryn Hill (feat. D'Angelo)" },
+      { file: "Nothing.mp3", title: "Nothing Even Matters", artist: "Lauryn Hill" },
     ];
+
+    // -----------------------
+    // Elements
+    // -----------------------
+    const scene = document.getElementById("scene");
+    const card = document.getElementById("card");
+    const askRow = document.getElementById("askRow");
+    const btnRow = document.getElementById("btnRow");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const enterRow = document.getElementById("enterRow");
+    const enterBtn = document.getElementById("enterBtn");
+    const resetRow = document.getElementById("resetRow");
+    const resetBtn = document.getElementById("resetBtn");
+    const playerWrap = document.getElementById("playerWrap");
+
+    const cloudsEl = document.getElementById("clouds");
+    const canvas = document.getElementById("fireflies");
+    const ctx = canvas.getContext("2d");
+
+    // Player
+    const audio = document.getElementById("audio");
+    const playBtn = document.getElementById("playBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const progress = document.getElementById("progress");
+    const curTime = document.getElementById("curTime");
+    const durTime = document.getElementById("durTime");
+    const titleLine = document.getElementById("titleLine");
+    const titleScroll = document.getElementById("titleScroll");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const repeatBtn = document.getElementById("repeatBtn");
+    const collapseBtn = document.getElementById("collapseBtn");
+    const player = document.getElementById("player");
+    const likeBtn = document.getElementById("likeBtn");
+
+    // -----------------------
+    // State
+    // -----------------------
+    let answeredYes = false;
+    let entered = false;
 
     let idx = 0;
     let isPlaying = false;
     let shuffle = false;
     let repeat = false;
-    let lastSeekUser = false;
 
-    function fmtTime(s){
-      if (!isFinite(s) || s < 0) return "0:00";
-      const m = Math.floor(s / 60);
-      const r = Math.floor(s % 60);
-      return `${m}:${String(r).padStart(2,"0")}`;
+    // For shuffle history
+    let order = playlist.map((_, i) => i);
+    let shuffleBag = [];
+
+    // Likes (local only)
+    let liked = new Set();
+
+    // -----------------------
+    // Helpers
+    // -----------------------
+    function formatTime(sec){
+      if(!isFinite(sec) || sec < 0) return "0:00";
+      const m = Math.floor(sec/60);
+      const s = Math.floor(sec%60);
+      return `${m}:${String(s).padStart(2,"0")}`;
     }
 
-    function setMarquee(text){
-      trackText.textContent = text;
-
-      // Toggle marquee only if text is longer than container width
-      // quick heuristic: length > 26
-      trackText.classList.remove("run");
-      if (text.length > 26){
-        // Duplicate text for smoother scroll illusion
-        trackText.textContent = text + "   •   " + text;
-        trackText.classList.add("run");
-      }
+    function setTitlePaused(){
+      titleScroll.textContent = "To My Everything 💗";
+      titleLine.classList.add("marqueeOff");
     }
 
-    function setPlayerIdleTitle(){
-      setMarquee("To My Everything 💗");
-    }
-
-    function setTrack(i){
-      idx = (i + playlist.length) % playlist.length;
-      const tr = playlist[idx];
-      audio.src = tr.file;
-
-      setMarquee(`${tr.title} — ${tr.artist}`);
-      // reset progress UI until metadata loads
-      seek.value = 0;
-      tNow.textContent = "0:00";
-      tDur.textContent = "0:00";
-    }
-
-    function playAudio(){
-      if (!audio.src) setTrack(idx);
-
-      audio.play().then(() => {
-        isPlaying = true;
-        playIcon.textContent = "⏸";
-      }).catch(() => {
-        // Autoplay may be blocked; user will click again.
-        isPlaying = false;
-        playIcon.textContent = "▶";
+    function setTitleTrack(){
+      const t = playlist[idx];
+      titleScroll.textContent = `${t.title} — ${t.artist}`;
+      // marquee only if long
+      requestAnimationFrame(() => {
+        const tooLong = titleScroll.scrollWidth > titleLine.clientWidth + 20;
+        titleLine.classList.toggle("marqueeOff", !tooLong);
       });
     }
 
-    function pauseAudio(){
-      audio.pause();
-      isPlaying = false;
-      playIcon.textContent = "▶";
-    }
-
-    function stopAudio(){
-      pauseAudio();
-      audio.currentTime = 0;
-      seek.value = 0;
-      tNow.textContent = "0:00";
-    }
-
-    function nextTrack(){
-      if (shuffle){
-        idx = Math.floor(Math.random() * playlist.length);
-      } else {
-        idx = (idx + 1) % playlist.length;
+    function loadTrack(i){
+      idx = (i + playlist.length) % playlist.length;
+      audio.src = playlist[idx].file;
+      audio.load();
+      progress.value = 0;
+      curTime.textContent = "0:00";
+      durTime.textContent = "0:00";
+      if(isPlaying){
+        // Must be user-gesture initiated on iOS; here we only call play after they've clicked enter/play.
+        audio.play().catch(()=>{});
       }
-      setTrack(idx);
-      playAudio();
+      setTitleTrack();
+      updateLikeUI();
     }
 
-    function prevTrack(){
-      // if not far into track, go prev; else restart
-      if (audio.currentTime > 2.5){
-        audio.currentTime = 0;
-        return;
+    function nextIndex(){
+      if(!shuffle) return (idx + 1) % playlist.length;
+
+      if(shuffleBag.length === 0){
+        shuffleBag = order.filter(i => i !== idx);
+        // Fisher-Yates shuffle
+        for(let i = shuffleBag.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i+1));
+          [shuffleBag[i], shuffleBag[j]] = [shuffleBag[j], shuffleBag[i]];
+        }
       }
-      idx = (idx - 1 + playlist.length) % playlist.length;
-      setTrack(idx);
-      playAudio();
+      return shuffleBag.pop();
     }
 
-    playBtn.addEventListener("click", () => {
-      if (!audio.src){
-        setTrack(idx);
-      }
-      if (isPlaying) pauseAudio();
-      else playAudio();
+    function prevIndex(){
+      // simple prev
+      return (idx - 1 + playlist.length) % playlist.length;
+    }
+
+    function updateLikeUI(){
+      const key = playlist[idx].file;
+      const on = liked.has(key);
+      likeBtn.textContent = on ? "♥" : "♡";
+      likeBtn.classList.toggle("on", on);
+    }
+
+    // -----------------------
+    // YES / NO flow
+    // -----------------------
+    yesBtn.addEventListener("click", () => {
+      answeredYes = true;
+
+      // Replace buttons with enter button
+      btnRow.classList.add("hidden");
+      enterRow.style.display = "flex";
+
+      // Slight little “relief” motion
+      card.style.transform = "translateY(-2px)";
+      setTimeout(()=> card.style.transform = "translateY(0px)", 200);
     });
 
-    nextBtn.addEventListener("click", nextTrack);
-    prevBtn.addEventListener("click", prevTrack);
+    enterBtn.addEventListener("click", () => {
+      entered = true;
+      scene.classList.add("entered");
+
+      // Hide card smoothly
+      document.getElementById("centerWrap").style.pointerEvents = "none";
+      card.style.opacity = "0";
+      card.style.transform = "translateY(10px)";
+      setTimeout(() => {
+        document.getElementById("centerWrap").style.display = "none";
+      }, 520);
+
+      // Show player
+      playerWrap.style.opacity = "1";
+
+      // Start ambience layers
+      startClouds();
+      resizeCanvas();
+      initFireflies();
+      requestAnimationFrame(loopFireflies);
+
+      // Load first track but keep paused until user hits play
+      loadTrack(0);
+      setTitlePaused();
+    });
+
+    noBtn.addEventListener("click", () => {
+      // Turn card black, hide ask row, show reset + centered emoji
+      card.classList.add("nope");
+      askRow.classList.add("hidden");
+      resetRow.style.display = "flex";
+    });
+
+    resetBtn.addEventListener("click", () => {
+      // simplest: reload to restore everything cleanly
+      window.location.reload();
+    });
+
+    // -----------------------
+    // Clouds (staggered, full drift, fade out)
+    // -----------------------
+    function startClouds(){
+      // Clear any existing
+      cloudsEl.innerHTML = "";
+
+      const cloudSpecs = [
+        { top: 10, scale: 1.05, dur: 78, delay: 0,   op: 0.42 },
+        { top: 18, scale: 0.85, dur: 92, delay: 12,  op: 0.30 },
+        { top: 26, scale: 1.20, dur: 88, delay: 24,  op: 0.28 },
+        { top: 14, scale: 0.95, dur: 84, delay: 36,  op: 0.33 },
+        { top: 30, scale: 0.75, dur: 96, delay: 48,  op: 0.22 },
+      ];
+
+      cloudSpecs.forEach((c, n) => {
+        const img = document.createElement("img");
+        img.src = "cloud.png"; // your file name
+        img.className = "cloud";
+        img.style.top = c.top + "%";
+        img.style.opacity = "0";
+        img.style.transform = `translateX(-10vw) scale(${c.scale})`;
+        img.style.animationDuration = c.dur + "s";
+        img.style.animationDelay = c.delay + "s";
+        img.style.filter = `blur(0.25px) brightness(0.92)`;
+        img.style.mixBlendMode = "screen";
+        img.style.setProperty("opacity", c.op);
+
+        // Override per-element opacity inside keyframes by using a wrapper via CSS var:
+        img.style.setProperty("--cloudOp", c.op);
+
+        // Instead: set base opacity and let keyframes handle fade
+        img.style.opacity = "0";
+        img.style.animationName = "cloudDrift";
+        img.style.animationTimingFunction = "linear";
+        img.style.animationIterationCount = "infinite";
+
+        // Slight per-cloud horizontal offset randomness
+        img.style.left = (-60 - n*8) + "%";
+
+        // Use dataset to store intended mid opacity
+        img.dataset.midOpacity = String(c.op);
+
+        cloudsEl.appendChild(img);
+
+        // Hack: enforce mid opacity during the run by adjusting on animation events
+        img.addEventListener("animationiteration", () => {
+          // nothing needed; keeps staggering
+        });
+      });
+
+      // Make clouds visible (entered class handles opacity on container)
+    }
+
+    // -----------------------
+    // Fireflies (canvas)
+    // -----------------------
+    let flies = [];
+    function resizeCanvas(){
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      canvas.width  = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    window.addEventListener("resize", () => {
+      if(!entered) return;
+      resizeCanvas();
+      initFireflies();
+    });
+
+    function initFireflies(){
+      flies = [];
+      const count = Math.round(Math.min(85, Math.max(45, window.innerWidth / 18)));
+      for(let i=0; i<count; i++){
+        const yBias = Math.random() ** 0.55; // more near bottom
+        const y = window.innerHeight * (0.55 + 0.45*yBias);
+        flies.push({
+          x: Math.random()*window.innerWidth,
+          y,
+          r: 1 + Math.random()*1.6,
+          vx: (Math.random()-0.5)*0.18,
+          vy: (Math.random()-0.5)*0.10,
+          phase: Math.random()*Math.PI*2,
+          tw: 0.7 + Math.random()*1.6
+        });
+      }
+    }
+
+    function loopFireflies(t){
+      if(!entered) return;
+      ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+
+      // soft glow
+      for(const f of flies){
+        f.phase += 0.02 * f.tw;
+        const flicker = 0.35 + 0.65*Math.abs(Math.sin(f.phase));
+
+        f.x += f.vx;
+        f.y += f.vy + Math.sin(f.phase)*0.05;
+
+        // wrap
+        if(f.x < -10) f.x = window.innerWidth + 10;
+        if(f.x > window.innerWidth + 10) f.x = -10;
+        if(f.y < window.innerHeight*0.52) f.y = window.innerHeight*0.92;
+        if(f.y > window.innerHeight + 10) f.y = window.innerHeight*0.55;
+
+        const alpha = 0.10 + 0.24*flicker;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 205, 120, ${alpha})`;
+        ctx.shadowColor = `rgba(255, 205, 120, ${alpha})`;
+        ctx.shadowBlur = 14;
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(loopFireflies);
+    }
+
+    // -----------------------
+    // Player interactions
+    // -----------------------
+    playBtn.addEventListener("click", async () => {
+      if(!entered) return; // should not happen
+      try{
+        if(!audio.src) loadTrack(0);
+
+        if(audio.paused){
+          await audio.play();
+          isPlaying = true;
+          playBtn.textContent = "❚❚";
+          setTitleTrack();
+        }else{
+          audio.pause();
+          isPlaying = false;
+          playBtn.textContent = "▶";
+          setTitlePaused();
+        }
+      }catch(e){
+        // If autoplay/gesture issues occur, user clicking play again will work.
+        console.warn(e);
+      }
+    });
+
+    prevBtn.addEventListener("click", () => {
+      loadTrack(prevIndex());
+      if(isPlaying) audio.play().catch(()=>{});
+    });
+
+    nextBtn.addEventListener("click", () => {
+      loadTrack(nextIndex());
+      if(isPlaying) audio.play().catch(()=>{});
+    });
+
+    audio.addEventListener("loadedmetadata", () => {
+      durTime.textContent = formatTime(audio.duration);
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if(!isFinite(audio.duration) || audio.duration <= 0) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      progress.value = String(pct);
+      curTime.textContent = formatTime(audio.currentTime);
+    });
+
+    progress.addEventListener("input", () => {
+      if(!isFinite(audio.duration) || audio.duration <= 0) return;
+      const pct = Number(progress.value) / 100;
+      audio.currentTime = pct * audio.duration;
+    });
+
+    audio.addEventListener("ended", () => {
+      if(repeat){
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+        return;
+      }
+      loadTrack(nextIndex());
+      if(isPlaying) audio.play().catch(()=>{});
+    });
 
     shuffleBtn.addEventListener("click", () => {
       shuffle = !shuffle;
       shuffleBtn.classList.toggle("on", shuffle);
+      if(shuffle) shuffleBag = [];
     });
 
     repeatBtn.addEventListener("click", () => {
       repeat = !repeat;
       repeatBtn.classList.toggle("on", repeat);
-      audio.loop = repeat; // simple repeat-one behavior
     });
 
-    heartBtn.addEventListener("click", () => {
-      // purely cute UI toggle
-      const on = heartBtn.textContent !== "♡";
-      heartBtn.textContent = on ? "♡" : "♥";
+    collapseBtn.addEventListener("click", () => {
+      player.classList.toggle("collapsed");
+      collapseBtn.textContent = player.classList.contains("collapsed") ? "▸" : "▾";
     });
 
-    // Sync progress
-    audio.addEventListener("loadedmetadata", () => {
-      tDur.textContent = fmtTime(audio.duration);
+    likeBtn.addEventListener("click", () => {
+      const key = playlist[idx].file;
+      if(liked.has(key)) liked.delete(key);
+      else liked.add(key);
+      updateLikeUI();
     });
 
-    audio.addEventListener("timeupdate", () => {
-      if (!isFinite(audio.duration) || audio.duration === 0) return;
-      tNow.textContent = fmtTime(audio.currentTime);
-
-      if (!lastSeekUser){
-        const v = Math.floor((audio.currentTime / audio.duration) * 1000);
-        seek.value = String(v);
-      }
-    });
-
-    // Seek interactions
-    seek.addEventListener("pointerdown", () => { lastSeekUser = true; });
-    seek.addEventListener("pointerup", () => {
-      lastSeekUser = false;
-      if (!isFinite(audio.duration) || audio.duration === 0) return;
-      const pct = Number(seek.value) / 1000;
-      audio.currentTime = pct * audio.duration;
-    });
-
-    seek.addEventListener("input", () => {
-      // live preview time while dragging
-      if (!isFinite(audio.duration) || audio.duration === 0) return;
-      const pct = Number(seek.value) / 1000;
-      const preview = pct * audio.duration;
-      tNow.textContent = fmtTime(preview);
-    });
-
-    audio.addEventListener("ended", () => {
-      if (repeat) return; // loop handles it
-      nextTrack();
-    });
-
-    // Initialize player idle
-    setPlayerIdleTitle();
-    // preload first track metadata once entered (optional)
-    // setTrack(idx); // uncomment if you want it ready immediately
-
+    // Start paused title
+    setTitlePaused();
   </script>
 </body>
 </html>
