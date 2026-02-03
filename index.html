@@ -19,11 +19,11 @@
       --radius: 22px;
 
       /* Clouds positioning + speed */
-      --cloudBandTop: 28vh;     /* move this up/down to sit above treeline */
-      --cloudBandHeight: 22vh;  /* thickness of the cloud band */
-      --cloudTravel: 110vw;     /* how far they travel */
-      --cloudMinDur: 90s;       /* slow drift (min) */
-      --cloudMaxDur: 120s;      /* slow drift (max) */
+      --cloudBandTop: 28vh;
+      --cloudBandHeight: 22vh;
+      --cloudTravel: 110vw;
+      --cloudMinDur: 90s;
+      --cloudMaxDur: 120s;
     }
 
     *{ box-sizing: border-box; }
@@ -42,7 +42,7 @@
       transform: translateZ(0);
     }
 
-    /* “Tinted glass” overlay (starts ON, fades OFF after YES) */
+    /* “Tinted glass” overlay (starts ON, fades OFF after Enter) */
     .tint{
       position:fixed; inset:0;
       background: rgba(25, 30, 55, .55);
@@ -107,10 +107,12 @@
       font-style: italic;
       color: rgba(255,255,255,.92);
       text-shadow: 0 10px 30px rgba(0,0,0,.45);
-      opacity: 1;
+      opacity: 0; /* start hidden (we fade in on YES) */
       transition: opacity 900ms ease;
       padding: 0 14px;
+      pointer-events:none;
     }
+    .tagline.show{ opacity: 1; }
     .tagline.fade{ opacity: 0; }
 
     /* Ask / No cards */
@@ -135,12 +137,6 @@
         radial-gradient(1200px 500px at 30% 10%, rgba(255,255,255,.65), rgba(255,255,255,0)),
         linear-gradient(180deg, var(--cardCream), var(--cardCream2));
       color: rgba(20,20,24,.92);
-    }
-
-    .card.dark{
-      background: radial-gradient(900px 500px at 20% 20%, rgba(255,255,255,.07), rgba(0,0,0,0)),
-                  linear-gradient(180deg, rgba(10,10,12,.94), rgba(0,0,0,.92));
-      color: rgba(255,255,255,.92);
     }
 
     .cardInner{
@@ -198,6 +194,7 @@
     button:active{ transform: scale(.98); }
     .yesBtn{ background: rgba(15,15,18,.92); color:#fff; }
     .noBtn{ background: rgba(255,255,255,.9); color: rgba(12,12,16,.92); }
+
     .enterBtn{
       margin-top: 14px;
       display:inline-flex;
@@ -216,32 +213,24 @@
       pointer-events:auto;
     }
 
-    /* NO state: big centered emoji */
-    .sadCenter{
-      display:grid;
-      place-items:center;
-      margin-top: 10px;
-      height: 180px;
-      font-size: 56px;
-      opacity: .95;
-    }
-    .resetRow{
-      display:flex;
-      gap: 12px;
-      align-items:center;
-      margin-top: 10px;
-    }
-    .resetBtn{
-      background: rgba(255,255,255,.92);
-      color: rgba(15,15,18,.95);
-      font-weight: 800;
-    }
-
     /* Fade out modal on enter */
     .modalWrap.fadeOut{
       opacity:0;
       pointer-events:none;
       transition: opacity 900ms ease;
+    }
+
+    /* NO button shake */
+    @keyframes nudge {
+      0%{ transform: translateX(0); }
+      20%{ transform: translateX(-6px); }
+      40%{ transform: translateX(6px); }
+      60%{ transform: translateX(-4px); }
+      80%{ transform: translateX(4px); }
+      100%{ transform: translateX(0); }
+    }
+    .noBtn.nudge{
+      animation: nudge 380ms ease;
     }
 
     /* Player */
@@ -306,13 +295,20 @@
       border: 1px solid rgba(255,255,255,.10);
       cursor:pointer;
       user-select:none;
+      transition: transform 140ms ease, box-shadow 250ms ease;
     }
     .iconBtn.on{
       background: rgba(255, 120, 170, .18);
       border-color: rgba(255, 120, 170, .30);
+      box-shadow: 0 0 18px rgba(255,120,170,.25);
     }
     .iconBtn:hover{ background: rgba(255,255,255,.10); }
     .iconBtn.on:hover{ background: rgba(255, 120, 170, .22); }
+
+    /* Heart pop */
+    .iconBtn.pop{
+      transform: scale(1.12);
+    }
 
     .marquee{
       display:none;
@@ -432,6 +428,41 @@
       user-select:none;
     }
 
+    /* Moon secret message */
+    #moonHotspot{
+      position: fixed;
+      top: 6vh;
+      left: 22vw;              /* aligns with moon on most layouts; tweak if needed */
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      z-index: 6;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    #moonMessage{
+      position: fixed;
+      top: 18vh;
+      left: 50%;
+      transform: translateX(-50%) scale(.96);
+      padding: 14px 22px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.92);
+      color: rgba(20,20,24,.95);
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 600ms ease, transform 600ms ease;
+      z-index: 25;
+    }
+    #moonMessage.show{
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
     /* Mobile tweaks */
     @media (max-width: 520px){
       .cardInner{ padding: 26px 20px 18px; }
@@ -439,6 +470,19 @@
       .ask{ font-size: 18px; }
       .marquee{ max-width: 58vw; }
       .playlist{ max-height: 180px; }
+      #moonHotspot{
+        top: 7vh;
+        left: 20vw;
+        width: 140px;
+        height: 140px;
+      }
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce){
+      .cloud{ animation: none !important; }
+      .marquee span{ animation: none !important; padding-left: 0 !important; }
+      .tagline, .tint, .modalWrap.fadeOut{ transition: none !important; }
     }
   </style>
 </head>
@@ -450,9 +494,12 @@
 
   <div class="tagline" id="tagline">I wanted to give you something you could stay in.</div>
 
-  <!-- Ask / No modal -->
+  <!-- Moon secret -->
+  <div id="moonHotspot" role="button" tabindex="0" aria-label="Moon"></div>
+  <div id="moonMessage" aria-live="polite">You are the moon to my sun! 🌝💕</div>
+
+  <!-- Ask modal -->
   <div class="modalWrap" id="modal">
-    <!-- START: Ask (cream) -->
     <div class="card cream" id="askCard">
       <div class="cardInner">
         <div class="hello">Hello my love,</div>
@@ -475,24 +522,6 @@
         <button class="enterBtn" id="enterBtn">Enter the painting ✨</button>
       </div>
     </div>
-
-    <!-- NO: dark card -->
-    <div class="card dark" id="noCard" style="display:none;">
-      <div class="cardInner">
-        <div class="hello">Hello my love,</div>
-        <div class="p">I can’t believe we are already having our first Valentine’s Day.</div>
-        <div class="p">In a way you have been helping turn my life into a work of art.</div>
-        <div class="p">So this is my little ode to you, me, and us.</div>
-        <div class="p">Thank you for being my <b>Muse</b>!</div>
-        <div class="sig">— Love Sweets 🍭<small>V.D 2026</small></div>
-
-        <div class="sadCenter">😟</div>
-
-        <div class="resetRow">
-          <button class="resetBtn" id="resetBtn">Reset</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Player -->
@@ -508,23 +537,23 @@
         </div>
 
         <div class="actions">
-          <div class="iconBtn" id="shuffleBtn" title="Shuffle">🔀</div>
-          <div class="iconBtn" id="repeatBtn" title="Repeat">🔁</div>
-          <div class="iconBtn" id="heartBtn" title="Love">♡</div>
-          <div class="collapseCaret" id="collapseBtn" title="Collapse">▾</div>
+          <div class="iconBtn" id="shuffleBtn" title="Shuffle" aria-label="Shuffle">🔀</div>
+          <div class="iconBtn" id="repeatBtn" title="Repeat" aria-label="Repeat">🔁</div>
+          <div class="iconBtn" id="heartBtn" title="Love" aria-label="Love">♡</div>
+          <div class="collapseCaret" id="collapseBtn" title="Collapse" aria-label="Collapse">▾</div>
         </div>
       </div>
 
       <div class="scrubRow">
         <div id="curTime">0:00</div>
-        <input id="scrub" type="range" min="0" max="100" value="0" />
+        <input id="scrub" type="range" min="0" max="100" value="0" aria-label="Scrub" />
         <div id="durTime">0:00</div>
       </div>
 
       <div class="controlsRow">
-        <div class="smallCtrl" id="prevBtn" title="Previous">⏮</div>
-        <button class="bigPlay" id="playBtn" title="Play/Pause">▶</button>
-        <div class="smallCtrl" id="nextBtn" title="Next">⏭</div>
+        <div class="smallCtrl" id="prevBtn" title="Previous" aria-label="Previous">⏮</div>
+        <button class="bigPlay" id="playBtn" title="Play/Pause" aria-label="Play/Pause">▶</button>
+        <div class="smallCtrl" id="nextBtn" title="Next" aria-label="Next">⏭</div>
       </div>
 
       <div class="playlist" id="playlist"></div>
@@ -534,6 +563,21 @@
   </div>
 
   <script>
+    /********************
+     * Feature flags (easy rollback switches)
+     ********************/
+    const FEATURES = {
+      moonMessage: true,
+      heartPinkShootingStar: true,
+      heartPop: true,
+      rememberSettings: true,
+      reducedMotionRespect: true,
+      safeNoButton: true,
+      marqueeOnlyIfOverflow: true
+    };
+
+    const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     /********************
      * STATE / PLAYLIST
      ********************/
@@ -560,13 +604,14 @@
     // Build a play order for shuffle
     let order = tracks.map((_, i) => i);
 
+    // Transition guard
+    let transitioning = false;
+
     const modal = document.getElementById("modal");
     const askCard = document.getElementById("askCard");
-    const noCard = document.getElementById("noCard");
     const yesBtn = document.getElementById("yesBtn");
     const noBtn = document.getElementById("noBtn");
     const enterBtn = document.getElementById("enterBtn");
-    const resetBtn = document.getElementById("resetBtn");
 
     const tint = document.getElementById("tint");
     const tagline = document.getElementById("tagline");
@@ -591,7 +636,42 @@
     const staticTitle = document.getElementById("staticTitle");
     const marquee = document.getElementById("marquee");
     const marqueeText = document.getElementById("marqueeText");
-    const subtitle = document.getElementById("subtitle");
+
+    const moonHotspot = document.getElementById("moonHotspot");
+    const moonMessage = document.getElementById("moonMessage");
+
+    const LS_KEY = "paintedValentine_v1";
+
+    function saveState(){
+      if (!FEATURES.rememberSettings) return;
+      const payload = {
+        isShuffle, isRepeat, liked,
+        collapsed: player.classList.contains("collapsed")
+      };
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(payload)); }catch(e){}
+    }
+
+    function loadState(){
+      if (!FEATURES.rememberSettings) return;
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        isShuffle = !!s.isShuffle;
+        isRepeat = !!s.isRepeat;
+        liked = !!s.liked;
+
+        shuffleBtn.classList.toggle("on", isShuffle);
+        repeatBtn.classList.toggle("on", isRepeat);
+        heartBtn.classList.toggle("on", liked);
+        heartBtn.textContent = liked ? "♥" : "♡";
+
+        if (s.collapsed){
+          player.classList.add("collapsed");
+          collapseBtn.textContent = "▴";
+        }
+      }catch(e){}
+    }
 
     function fmtTime(sec){
       if (!isFinite(sec)) return "0:00";
@@ -603,7 +683,6 @@
     function rebuildOrder(){
       order = tracks.map((_, i) => i);
       if (isShuffle){
-        // Fisher-Yates shuffle
         for (let i = order.length - 1; i > 0; i--){
           const j = Math.floor(Math.random() * (i + 1));
           [order[i], order[j]] = [order[j], order[i]];
@@ -612,12 +691,21 @@
     }
 
     function getOrderedIndex(){
-      // find currentIndex in order
       return order.indexOf(currentIndex);
     }
 
+    function shouldUseMarquee(text){
+      if (!FEATURES.marqueeOnlyIfOverflow) return true;
+      // Temporarily set text and measure overflow
+      marqueeText.textContent = text;
+      marquee.style.display = "block";
+      const span = marqueeText;
+      // allow layout
+      const overflow = span.scrollWidth > marquee.clientWidth + 6;
+      return overflow;
+    }
+
     function setTitleForState(){
-      // When paused: show static title only
       const isPlaying = !audio.paused && audio.currentTime > 0;
       if (!isPlaying){
         staticTitle.style.display = "block";
@@ -626,11 +714,27 @@
         return;
       }
 
-      // When playing: show marquee "Song — Artist"
       const t = tracks[currentIndex];
+      const text = `${t.title} — ${t.artist}`;
+
       staticTitle.style.display = "none";
-      marquee.style.display = "block";
-      marqueeText.textContent = `${t.title} — ${t.artist}`;
+
+      if (prefersReducedMotion && FEATURES.reducedMotionRespect){
+        marquee.style.display = "none";
+        staticTitle.style.display = "block";
+        staticTitle.textContent = text; // readable, non-moving
+        return;
+      }
+
+      const use = shouldUseMarquee(text);
+      if (use){
+        marquee.style.display = "block";
+        marqueeText.textContent = text;
+      }else{
+        marquee.style.display = "none";
+        staticTitle.style.display = "block";
+        staticTitle.textContent = text;
+      }
     }
 
     function loadTrack(idx, autoplay=false){
@@ -638,16 +742,14 @@
       audio.src = tracks[idx].file;
       audio.load();
       highlightActive();
-      // Update title immediately (paused state until play)
       setTitleForState();
-      // Optional autoplay
       if (autoplay){
-        audio.play().catch(()=>{ /* user gesture may be required */ });
+        audio.play().catch(()=>{});
       }
     }
 
     function highlightActive(){
-      [...playlistEl.querySelectorAll(".track")].forEach((row, i)=>{
+      [...playlistEl.querySelectorAll(".track")].forEach((row)=>{
         const rowIdx = Number(row.dataset.index);
         row.classList.toggle("active", rowIdx === currentIndex);
       });
@@ -656,15 +758,13 @@
     function nextTrack(){
       const pos = getOrderedIndex();
       const nextPos = (pos + 1) % order.length;
-      const nextIdx = order[nextPos];
-      loadTrack(nextIdx, true);
+      loadTrack(order[nextPos], true);
     }
 
     function prevTrack(){
       const pos = getOrderedIndex();
       const prevPos = (pos - 1 + order.length) % order.length;
-      const prevIdx = order[prevPos];
-      loadTrack(prevIdx, true);
+      loadTrack(order[prevPos], true);
     }
 
     function buildPlaylist(){
@@ -692,12 +792,30 @@
      * ASK FLOW
      ********************/
     yesBtn.addEventListener("click", ()=>{
-      // Don’t enter immediately — show the enter button
+      if (transitioning) return;
+      // show Enter, fade IN tagline
       enterBtn.classList.add("show");
+      tagline.classList.add("show");
+    });
+
+    noBtn.addEventListener("click", ()=>{
+      if (!FEATURES.safeNoButton) return;
+
+      // playful refusal
+      noBtn.classList.remove("nudge");
+      void noBtn.offsetWidth; // restart animation
+      noBtn.classList.add("nudge");
+
+      const original = noBtn.textContent;
+      noBtn.textContent = "Nice try 😌";
+      setTimeout(()=>{ noBtn.textContent = original; }, 900);
     });
 
     enterBtn.addEventListener("click", ()=>{
+      if (transitioning) return;
+      transitioning = true;
       accepted = true;
+
       // Fade away the card + tint + tagline
       modal.classList.add("fadeOut");
       tint.classList.add("off");
@@ -706,41 +824,34 @@
       // Show player once we enter
       playerWrap.style.display = "block";
 
-      // Start music only if they click play (safer). Load track 0.
       rebuildOrder();
       loadTrack(currentIndex, false);
 
-      // After fade, remove modal from layout to avoid accidental click capture
-      setTimeout(()=>{ modal.style.display = "none"; }, 1000);
+      setTimeout(()=>{
+        modal.style.display = "none";
+        transitioning = false;
+      }, 1000);
     });
 
-    noBtn.addEventListener("click", ()=>{
-      // Swap to dark card and keep it there
-      askCard.style.display = "none";
-      noCard.style.display = "block";
-      // Keep tint/tagline as-is (still behind glass)
-    });
+    /********************
+     * MOON SECRET
+     ********************/
+    let moonRevealed = false;
 
-    resetBtn.addEventListener("click", ()=>{
-      // Full reset to initial state
-      accepted = false;
-      askCard.style.display = "block";
-      noCard.style.display = "none";
-      enterBtn.classList.remove("show");
+    function revealMoonMessage(){
+      if (!FEATURES.moonMessage) return;
+      if (moonRevealed) return;
+      moonRevealed = true;
+      moonMessage.classList.add("show");
+      setTimeout(()=> moonMessage.classList.remove("show"), 4200);
+    }
 
-      modal.style.display = "grid";
-      modal.classList.remove("fadeOut");
-
-      tint.classList.remove("off");
-      tagline.classList.remove("fade");
-
-      playerWrap.style.display = "none";
-
-      // stop audio
-      audio.pause();
-      audio.currentTime = 0;
-      playBtn.textContent = "▶";
-      setTitleForState();
+    moonHotspot.addEventListener("click", revealMoonMessage);
+    moonHotspot.addEventListener("keydown", (e)=>{
+      if (e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        revealMoonMessage();
+      }
     });
 
     /********************
@@ -754,9 +865,7 @@
         try{
           await audio.play();
           playBtn.textContent = "⏸";
-        }catch(e){
-          // user gesture issues should be resolved since they clicked the button
-        }
+        }catch(e){}
       }else{
         audio.pause();
         playBtn.textContent = "▶";
@@ -764,33 +873,44 @@
       setTitleForState();
     });
 
-    prevBtn.addEventListener("click", ()=>{
-      prevTrack();
-    });
-    nextBtn.addEventListener("click", ()=>{
-      nextTrack();
-    });
+    prevBtn.addEventListener("click", prevTrack);
+    nextBtn.addEventListener("click", nextTrack);
 
     shuffleBtn.addEventListener("click", ()=>{
       isShuffle = !isShuffle;
       shuffleBtn.classList.toggle("on", isShuffle);
       rebuildOrder();
+      saveState();
     });
 
     repeatBtn.addEventListener("click", ()=>{
       isRepeat = !isRepeat;
       repeatBtn.classList.toggle("on", isRepeat);
+      saveState();
     });
 
+    // Heart: pop + pink shooting star trigger
     heartBtn.addEventListener("click", ()=>{
       liked = !liked;
       heartBtn.textContent = liked ? "♥" : "♡";
       heartBtn.classList.toggle("on", liked);
+
+      if (FEATURES.heartPop){
+        heartBtn.classList.add("pop");
+        setTimeout(()=>heartBtn.classList.remove("pop"), 180);
+      }
+
+      if (FEATURES.heartPinkShootingStar && liked){
+        spawnSpecialShootingStar("pink");
+      }
+
+      saveState();
     });
 
     collapseBtn.addEventListener("click", ()=>{
       const collapsed = player.classList.toggle("collapsed");
       collapseBtn.textContent = collapsed ? "▴" : "▾";
+      saveState();
     });
 
     audio.addEventListener("timeupdate", ()=>{
@@ -831,10 +951,9 @@
     });
 
     /********************
-     * CLOUDS (slow, staggered, sky-band anchored)
+     * CLOUDS (unchanged)
      ********************/
     const cloudsEl = document.getElementById("clouds");
-
     function rand(min, max){ return Math.random() * (max - min) + min; }
 
     function spawnCloud(layerClass){
@@ -842,7 +961,6 @@
       img.src = "cloud.png";
       img.className = `cloud ${layerClass}`;
 
-      const y = rand(0, 1) * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cloudBandHeight")) || 22);
       const scale = rand(0.85, 1.35);
       const opacity = layerClass === "layer1" ? rand(.36, .48)
                     : layerClass === "layer2" ? rand(.24, .34)
@@ -853,14 +971,18 @@
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cloudMaxDur")) || 120
       );
 
-      const delay = rand(0, 18); // stagger
+      const delay = rand(0, 18);
       img.style.setProperty("--y", `${rand(-6, 14)}px`);
       img.style.setProperty("--s", `${scale}`);
       img.style.setProperty("--o", `${opacity}`);
 
-      img.style.animation = `drift ${dur}s linear ${delay}s infinite`;
+      // Respect reduced motion
+      if (!(prefersReducedMotion && FEATURES.reducedMotionRespect)){
+        img.style.animation = `drift ${dur}s linear ${delay}s infinite`;
+      }else{
+        img.style.animation = "none";
+      }
 
-      // Slightly different widths for variety
       img.style.width = `${rand(380, 720)}px`;
 
       cloudsEl.appendChild(img);
@@ -869,7 +991,6 @@
 
     function initClouds(){
       cloudsEl.innerHTML = "";
-      // 3 depth layers, multiple clouds each
       const counts = { layer1: 3, layer2: 3, layer3: 2 };
       Object.entries(counts).forEach(([layer, count])=>{
         for (let i=0; i<count; i++) spawnCloud(layer);
@@ -877,7 +998,7 @@
     }
 
     /********************
-     * STARS + SHOOTING STAR (behind clouds)
+     * STARS + SHOOTING STARS
      ********************/
     const canvas = document.getElementById("stars");
     const ctx = canvas.getContext("2d");
@@ -895,23 +1016,37 @@
     let stars = [];
     function buildStars(){
       stars = [];
-      const count = Math.floor((window.innerWidth * window.innerHeight) / 9000); // density
+      const count = Math.floor((window.innerWidth * window.innerHeight) / 9000);
       for (let i=0; i<count; i++){
         stars.push({
           x: Math.random() * W,
-          y: Math.random() * H * 0.62, // keep stars mostly in upper sky
+          y: Math.random() * H * 0.62,
           r: rand(0.6, 1.7) * devicePixelRatio,
           a: rand(0.15, 0.9),
-          tw: rand(0.002, 0.01),
+          tw: prefersReducedMotion && FEATURES.reducedMotionRespect ? rand(0.0005, 0.002) : rand(0.002, 0.01),
           phase: rand(0, Math.PI*2)
         });
       }
     }
 
     let shooting = null;
+
+    function spawnSpecialShootingStar(color){
+      if (shooting) return; // avoid stacking
+      shooting = {
+        x: rand(W*0.15, W*0.85),
+        y: rand(H*0.06, H*0.32),
+        vx: rand(8, 12) * devicePixelRatio,
+        vy: rand(3, 6) * devicePixelRatio,
+        life: 0,
+        max: rand(40, 58),
+        color
+      };
+    }
+
     function maybeSpawnShootingStar(){
       if (shooting) return;
-      // ~ once every 12–25 seconds
+      if (prefersReducedMotion && FEATURES.reducedMotionRespect) return;
       if (Math.random() < 0.006){
         shooting = {
           x: rand(W*0.15, W*0.85),
@@ -919,7 +1054,8 @@
           vx: rand(10, 16) * devicePixelRatio,
           vy: rand(4, 7) * devicePixelRatio,
           life: 0,
-          max: rand(26, 40)
+          max: rand(26, 40),
+          color: null
         };
       }
     }
@@ -930,9 +1066,8 @@
       // Stars (twinkle)
       for (const s of stars){
         s.phase += s.tw;
-        const tw = (Math.sin(s.phase) + 1) / 2; // 0..1
+        const tw = (Math.sin(s.phase) + 1) / 2;
         const alpha = Math.min(1, Math.max(0, s.a * (0.6 + tw*0.6)));
-
         ctx.beginPath();
         ctx.fillStyle = `rgba(255,255,255,${alpha})`;
         ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
@@ -948,7 +1083,6 @@
         const x1 = shooting.x + shooting.vx * shooting.life;
         const y1 = shooting.y + shooting.vy * shooting.life;
 
-        // tail
         const tailLen = 120 * devicePixelRatio;
         const dx = shooting.vx, dy = shooting.vy;
         const mag = Math.sqrt(dx*dx + dy*dy) || 1;
@@ -956,17 +1090,24 @@
         const ty = (dy / mag) * tailLen;
 
         const a = (1 - t) * 0.9;
-        ctx.strokeStyle = `rgba(255,255,255,${a})`;
-        ctx.lineWidth = 2.2 * devicePixelRatio;
+
+        const starColor = shooting.color;
+        const stroke =
+          starColor === "pink"
+            ? `rgba(255,160,200,${a})`
+            : `rgba(255,255,255,${a})`;
+
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = starColor ? 3.2 * devicePixelRatio : 2.2 * devicePixelRatio;
+
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x1 - tx, y1 - ty);
         ctx.stroke();
 
-        // head glow
-        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.fillStyle = stroke;
         ctx.beginPath();
-        ctx.arc(x1, y1, 2.2 * devicePixelRatio, 0, Math.PI*2);
+        ctx.arc(x1, y1, (starColor ? 2.8 : 2.2) * devicePixelRatio, 0, Math.PI*2);
         ctx.fill();
 
         if (shooting.life >= shooting.max) shooting = null;
@@ -982,6 +1123,9 @@
     initClouds();
     resize();
     draw();
+
+    // Restore persisted toggles
+    loadState();
 
     // Start with first track loaded (no autoplay)
     rebuildOrder();
